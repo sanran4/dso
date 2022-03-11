@@ -5,36 +5,24 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
 // biosCmd represents the bios command
 var biosCmd = &cobra.Command{
 	Use:   "bios",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "fetch report or change setting for server BIOS",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("bios called")
+		//parseBiosArgs(cmd, args)
 	},
 }
 
 func init() {
 	serverCmd.AddCommand(biosCmd)
 
-	// Here you will define your flags and configuration settings.
+	// Flags
+	// Format: biosCmd.PersistentFlags().StringP(name string, shorthand string, value string, usage string)
+	biosCmd.PersistentFlags().BoolP("report", "r", true, "Fetch report for the server bios")
+	biosCmd.PersistentFlags().StringP("setConfig", "s", "", "Password for the server iDRAC")
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// biosCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// biosCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

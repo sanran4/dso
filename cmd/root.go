@@ -14,8 +14,9 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "dso",
 	Short: "A database solution optimizer ",
-	Long: `dso is database solution optimizer tool using which one can:
-- report settings which is not following best practices
+	Long: `dso is a database solution optimizer tool that can be used to:
+- report configuration settings values at all or individual layer within solution
+- report only those settings that are not following best practice recomendations
 - change individual setting at individual layer within database soluton
 	`,
 	// Uncomment the following line if your bare application

@@ -13,15 +13,12 @@ import (
 // rhelCmd represents the rhel command
 var rhelCmd = &cobra.Command{
 	Use:   "rhel",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Work with RHEL (Redhat Enterprise Linux) layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("rhel called")
+		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("dso os rhel -h")
+		fmt.Println("dso os rhel --help")
+		fmt.Println("dso help os rhel")
 	},
 }
 

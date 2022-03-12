@@ -13,9 +13,12 @@ import (
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "work with different server components",
+	Short: "Work with physical server layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("server called")
+		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("dso server -h")
+		fmt.Println("dso server --help")
+		fmt.Println("dso help server")
 	},
 }
 

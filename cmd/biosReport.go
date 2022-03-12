@@ -21,9 +21,10 @@ var reportCmd = &cobra.Command{
 	Short: "Fetch report for the server bios",
 	Long: `This report command will pull report from the server bios
 Example:
-	dso server bios report -i 10.0.0.1 -u user1 -p pass1
-	dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1
-`,
+dso server bios report -i 10.0.0.1 -u user1 -p pass1
+dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
+	Example: `dso server bios report -i 10.0.0.1 -u user1 -p pass1
+dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("report called")
 		uri, usr, pas := createURL(cmd, args)

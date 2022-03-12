@@ -13,15 +13,12 @@ import (
 // esxiCmd represents the esxi command
 var esxiCmd = &cobra.Command{
 	Use:   "esxi",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Work with VMware ESXi layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("esxi called")
+		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("dso virtual esxi -h")
+		fmt.Println("dso virtual esxi --help")
+		fmt.Println("dso help virtual esxi")
 	},
 }
 

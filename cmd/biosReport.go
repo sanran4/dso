@@ -21,9 +21,9 @@ var reportCmd = &cobra.Command{
 	Short: "Fetch report for the server bios",
 	Long: `This report command will pull report from the server bios
 Example:
-dso server bios report -i 10.0.0.1 -u user1 -p pass1
+dso server bios report -I 10.0.0.1 -U user1 -P pass1
 dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
-	Example: `dso server bios report -i 10.0.0.1 -u user1 -p pass1
+	Example: `dso server bios report -I 10.0.0.1 -U user1 -P pass1
 dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("report called")
@@ -40,9 +40,9 @@ func init() {
 
 	// Flags
 	// Format: biosCmd.PersistentFlags().StringP(name string, shorthand string, value string, usage string)
-	reportCmd.Flags().StringP("idracIP", "i", "", "iDRAC IP of the server")
-	reportCmd.Flags().StringP("user", "u", "", "Username for the server iDRAC")
-	reportCmd.Flags().StringP("pass", "p", "", "Password for the server iDRAC")
+	reportCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
+	reportCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
+	reportCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required

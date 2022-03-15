@@ -7,11 +7,16 @@ package cmd
 import (
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"reflect"
+	"strconv"
 
+	"github.com/da0x/golang/olog"
+	"github.com/kataras/tablewriter"
+	"github.com/lensesio/tableprinter"
 	"github.com/spf13/cobra"
 )
 
@@ -26,12 +31,7 @@ dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
 	Example: `dso server bios report -I 10.0.0.1 -U user1 -P pass1
 dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//fmt.Println("report called")
-		uri, usr, pas := createURL(cmd, args)
-		rd := fetchReportData(uri, usr, pas)
-		fmt.Println(PrettyPrint(rd))
-		//fmt.Println("result: " + data.MemOpMode)
-
+		ShowBios(cmd, args)
 	},
 }
 
@@ -51,33 +51,40 @@ func init() {
 	reportCmd.MarkFlagRequired("pass")
 }
 
+type AttrConv struct {
+	ServerSetting string
+	Value         string
+}
+
+type Attribute struct {
+	SystemModelName    string `json:"SystemModelName"`
+	SystemBiosVersion  string `json:"SystemBiosVersion"`
+	SystemMeVersion    string `json:"SystemMeVersion"`
+	SystemServiceTag   string `json:"SystemServiceTag"`
+	SystemManufacturer string `json:"SystemManufacturer"`
+	SysMfrContactInfo  string `json:"SysMfrContactInfo"`
+	SystemCpldVersion  string `json:"SystemCpldVersion"`
+	SysMemSize         string `json:"SysMemSize"`
+	SysMemType         string `json:"SysMemType"`
+	SysMemSpeed        string `json:"SysMemSpeed"`
+	MemOpMode          string `json:"MemOpMode"`
+	Proc1Brand         string `json:"Proc1Brand"`
+	ProcCoreSpeed      string `json:"ProcCoreSpeed"`
+	Proc1NumCores      int    `json:"Proc1NumCores"`
+	ProcBusSpeed       string `json:"ProcBusSpeed"`
+	LogicalProc        string `json:"LogicalProc"`
+	ProcVirtualization string `json:"ProcVirtualization"`
+	ProcX2Apic         string `json:"ProcX2Apic"`
+	ControlledTurbo    string `json:"ControlledTurbo"`
+	NvmeMode           string `json:"NvmeMode"`
+	BootMode           string `json:"BootMode"`
+	SysProfile         string `json:"SysProfile"`
+	SecureBoot         string `json:"SecureBoot"`
+}
+
 type BiosConfig struct {
-	Name       string `json:"name"`
-	Attributes struct {
-		SystemModelName    string `json:"SystemModelName"`
-		SystemBiosVersion  string `json:"SystemBiosVersion"`
-		SystemMeVersion    string `json:"SystemMeVersion"`
-		SystemServiceTag   string `json:"SystemServiceTag"`
-		SystemManufacturer string `json:"SystemManufacturer"`
-		SysMfrContactInfo  string `json:"SysMfrContactInfo"`
-		SystemCpldVersion  string `json:"SystemCpldVersion"`
-		SysMemSize         string `json:"SysMemSize"`
-		SysMemType         string `json:"SysMemType"`
-		SysMemSpeed        string `json:"SysMemSpeed"`
-		MemOpMode          string `json:"MemOpMode"`
-		Proc1Brand         string `json:"Proc1Brand"`
-		ProcCoreSpeed      string `json:"ProcCoreSpeed"`
-		Proc1NumCores      int    `json:"Proc1NumCores"`
-		ProcBusSpeed       string `json:"ProcBusSpeed"`
-		LogicalProc        string `json:"LogicalProc"`
-		ProcVirtualization string `json:"ProcVirtualization"`
-		ProcX2Apic         string `json:"ProcX2Apic"`
-		ControlledTurbo    string `json:"ControlledTurbo"`
-		NvmeMode           string `json:"NvmeMode"`
-		BootMode           string `json:"BootMode"`
-		SysProfile         string `json:"SysProfile"`
-		SecureBoot         string `json:"SecureBoot"`
-	} `json:"Attributes"`
+	Name       string    `json:"name"`
+	Attributes Attribute `json:"Attributes"`
 }
 
 func createURL(cmd *cobra.Command, args []string) (uri, usr, pas string) {
@@ -90,7 +97,7 @@ func createURL(cmd *cobra.Command, args []string) (uri, usr, pas string) {
 	return baseURL, user, pass
 }
 
-func fetchReportData(baseURL, user, pass string) BiosConfig {
+func fetchReportData(baseURL, user, pass string) Attribute {
 
 	// TODO: This is insecure; use only in dev environments.
 	tr := &http.Transport{
@@ -120,12 +127,66 @@ func fetchReportData(baseURL, user, pass string) BiosConfig {
 	}
 
 	//fmt.Println(PrettyPrint(biosConfig))
+	attr := Attribute{}
+	attr = biosConfig.Attributes
 
-	return biosConfig
+	return attr
+}
+
+func ShowData(d Attribute) {
+	printer := tableprinter.New(os.Stdout)
+
+	// Optionally, customize the table, import of the underline 'tablewriter' package is required for that.
+	printer.BorderTop, printer.BorderBottom, printer.BorderLeft, printer.BorderRight = true, true, true, true
+	printer.CenterSeparator = "│"
+	printer.ColumnSeparator = "│"
+	printer.RowSeparator = "─"
+	printer.HeaderBgColor = tablewriter.BgBlackColor
+	printer.HeaderFgColor = tablewriter.FgGreenColor
+
+	// Print the slice of structs as table, as shown above.
+	printer.Print(d)
 }
 
 // PrettyPrint to print struct in a readable way
 func PrettyPrint(i interface{}) string {
 	s, _ := json.MarshalIndent(i, "", "\t")
 	return string(s)
+}
+
+func ShowBios(cmd *cobra.Command, args []string) {
+
+	//var attr []Attribute
+	uri, usr, pas := createURL(cmd, args)
+	rd := fetchReportData(uri, usr, pas)
+
+	var test1 []AttrConv
+	fields := reflect.TypeOf(rd)
+	values := reflect.ValueOf(rd)
+	num := fields.NumField()
+	for i := 0; i < num; i++ {
+		field := fields.Field(i)
+		value := values.Field(i)
+		var test2 AttrConv
+
+		var v string
+		switch value.Kind() {
+		case reflect.String:
+			v = value.String()
+		case reflect.Int:
+			v = (strconv.FormatInt(value.Int(), 10))
+		case reflect.Int32:
+			v = strconv.FormatInt(value.Int(), 10)
+		case reflect.Int64:
+			v = strconv.FormatInt(value.Int(), 10)
+		default:
+			v = value.String()
+		}
+
+		test2.ServerSetting = field.Name
+		test2.Value = v
+		//fmt.Print("Type:", field.Type, ",", field.Name, "=", value, "\n")
+		test1 = append(test1, test2)
+	}
+	olog.Print(test1)
 }

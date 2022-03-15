@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/da0x/golang/olog"
 	_ "github.com/denisenkom/go-mssqldb"
-	"github.com/sanran4/dso/util"
 	"github.com/spf13/cobra"
 )
 
@@ -27,29 +27,36 @@ dso db sql report --instance=10.0.0.1 --user=user1 --pass=pass1`,
 
 		connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", server, user, pass, port)
 
+		var query2 string = `
+		select srvSetting, srvData from (
+			SELECT  
+			  SERVERPROPERTY('MachineName') AS ComputerName,
+			  SERVERPROPERTY('ServerName') AS InstanceName,  
+			  SERVERPROPERTY('ProductVersion') AS ProductVersion,  
+			  SERVERPROPERTY('ProductLevel') AS ProductLevel,  
+			  SERVERPROPERTY('Edition') AS Edition,
+			  SERVERPROPERTY('InstanceDefaultDataPath') AS InstanceDefaultDataPath,
+			  SERVERPROPERTY('InstanceDefaultLogPath') AS InstanceDefaultLogPath,
+			  SERVERPROPERTY('InstanceDefaultBackupPath') AS InstanceDefaultBackupPath,
+			  SERVERPROPERTY('Collation') AS Collation,
+			  SERVERPROPERTY('IsClustered') AS IsClustered,
+			  SERVERPROPERTY('IsHadrEnabled') AS IsHadrEnabled,
+			  SERVERPROPERTY('IsPolyBaseInstalled') AS IsPolyBaseInstalled
+			) as t1
+			UNPIVOT(srvData FOR srvSetting IN (
+				ComputerName, InstanceName, ProductVersion, ProductLevel, Edition, InstanceDefaultDataPath, InstanceDefaultLogPath, InstanceDefaultBackupPath, Collation, IsClustered, IsHadrEnabled, IsPolyBaseInstalled)
+				) AS unp
+		`
+		fmt.Println("SQL Server Property:")
+		getServerConfig(connString, query2)
+
 		var query3 string = `
 		SELECT convert(varchar(100),name) ConfigName, convert(varchar(100),value) ConfigValue, 
 		convert(varchar(100),value_in_use) ConfigValueInUse, convert(varchar(512),description) ConfigDescription
 		FROM sys.configurations where configuration_id in (109,503, 505, 1532,1535,1538,1539,1543,1544,1576, 1579,1589)
 		`
+		fmt.Println("SQL Server Instance Configuration:")
 		getInstanceConfig(connString, query3)
-
-		var query4 string = `
-		SELECT  
-			SERVERPROPERTY('MachineName') AS ComputerName,
-			SERVERPROPERTY('ServerName') AS InstanceName,  
-			SERVERPROPERTY('ProductVersion') AS ProductVersion,  
-			SERVERPROPERTY('ProductLevel') AS ProductLevel,  
-			SERVERPROPERTY('Edition') AS Edition,
-			SERVERPROPERTY('InstanceDefaultDataPath') AS InstanceDefaultDataPath,
-			SERVERPROPERTY('InstanceDefaultLogPath') AS InstanceDefaultLogPath,
-			SERVERPROPERTY('InstanceDefaultBackupPath') AS InstanceDefaultBackupPath,
-			SERVERPROPERTY('Collation') AS Collation,
-			SERVERPROPERTY('IsClustered') AS IsClustered,
-			SERVERPROPERTY('IsHadrEnabled') AS IsHadrEnabled,
-			SERVERPROPERTY('IsPolyBaseInstalled') AS IsPolyBaseInstalled;
-		`
-		GetSrvProperty(connString, query4)
 
 		var query5 string = `
 		CREATE TABLE #FileSize
@@ -78,7 +85,9 @@ dso db sql report --instance=10.0.0.1 --user=user1 --pass=pass1`,
 		FROM #FileSize
 		WHERE DbName NOT IN ('distribution', 'master', 'model', 'msdb')
 		`
+		fmt.Println("SQL Server Database Files:")
 		GetFileDetails(connString, query5)
+
 	},
 }
 
@@ -148,7 +157,8 @@ func getInstanceConfig(connStr, query string) {
 	//fmt.Println(string(b))
 	//fmt.Println(mc1)
 
-	fmt.Println(util.PrettyPrint(mc1))
+	//fmt.Println(util.PrettyPrint(mc1))
+	olog.Print(mc1)
 
 	err = totalRows.Err()
 	if err != nil {
@@ -156,22 +166,12 @@ func getInstanceConfig(connStr, query string) {
 	}
 }
 
-type svrProperty struct {
-	ComputerName              string `json:"ComputerName"`
-	InstanceName              string `json:"InstanceName"`
-	ProductVersion            string `json:"ProductVersion"`
-	ProductLevel              string `json:"ProductLevel"`
-	Edition                   string `json:"Edition"`
-	InstanceDefaultDataPath   string `json:"InstanceDefaultDataPath"`
-	InstanceDefaultLogPath    string `json:"InstanceDefaultLogPath"`
-	InstanceDefaultBackupPath string `json:"InstanceDefaultBackupPath"`
-	Collation                 string `json:"Collation"`
-	IsClustered               string `json:"IsClustered"`
-	IsHadrEnabled             string `json:"IsHadrEnabled"`
-	IsPolyBaseInstalled       string `json:"IsPolyBaseInstalled"`
+type svrData struct {
+	ServerSetting string `json:"srvSetting"`
+	Value         string `json:"srvData"`
 }
 
-func GetSrvProperty(connStr, query string) {
+func getServerConfig(connStr, query string) {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
 		log.Fatal("Open connection failed:", err.Error())
@@ -193,27 +193,27 @@ func GetSrvProperty(connStr, query string) {
 	}
 	defer totalRows.Close()
 
-	mc1 := []svrProperty{}
+	mc1 := []svrData{}
 	for totalRows.Next() {
-		c1 := svrProperty{}
-		err = totalRows.Scan(&c1.ComputerName, &c1.InstanceName, &c1.ProductVersion, &c1.ProductLevel, &c1.Edition, &c1.InstanceDefaultDataPath, &c1.InstanceDefaultLogPath, &c1.InstanceDefaultBackupPath, &c1.Collation, &c1.IsClustered, &c1.IsHadrEnabled, &c1.IsPolyBaseInstalled)
+		c1 := svrData{}
+		err = totalRows.Scan(&c1.ServerSetting, &c1.Value)
 		if err != nil {
 			panic(err)
 		}
 		mc1 = append(mc1, c1)
 	}
 
-	fmt.Println(util.PrettyPrint(mc1))
-
-	//fmt.Printf("%+v", mc1)
 	// get any error encountered during iteration
 	err = totalRows.Err()
 	if err != nil {
 		panic(err)
 	}
+	//fmt.Println(util.PrettyPrint(mc1))
+	//fmt.Printf("%+v", mc1)
+	olog.Print(mc1)
 }
 
-type fileDetails struct {
+type FileDetails struct {
 	DbName        string `json:"DbName"`
 	FileName      string `json:"FileName"`
 	PhysicalName  string `json:"PhysicalName"`
@@ -244,9 +244,9 @@ func GetFileDetails(connStr, query string) {
 	}
 	defer totalRows.Close()
 
-	mc1 := []fileDetails{}
+	var mc1 []FileDetails
 	for totalRows.Next() {
-		c1 := fileDetails{}
+		var c1 FileDetails
 		err = totalRows.Scan(&c1.DbName, &c1.FileName, &c1.PhysicalName, &c1.Type, &c1.CurrentSizeMB, &c1.FreeSpaceMB)
 		if err != nil {
 			panic(err)
@@ -254,12 +254,19 @@ func GetFileDetails(connStr, query string) {
 		mc1 = append(mc1, c1)
 	}
 
-	fmt.Println(util.PrettyPrint(mc1))
-
-	//fmt.Printf("%+v", mc1)
 	// get any error encountered during iteration
 	err = totalRows.Err()
 	if err != nil {
 		panic(err)
 	}
+
+	//fmt.Println(mc1)
+	//fmt.Println(util.PrettyPrint(mc1))
+	//tableprinter.Print(os.Stdout, mc1)
+	//b, err := json.Marshal(mc1)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//tableprinter.PrintJSON(os.Stdout, b)
+	olog.Print(mc1)
 }

@@ -66,9 +66,9 @@ type Attribute struct {
 	SysMemType         string `json:"SysMemType"`
 	SysMemSpeed        string `json:"SysMemSpeed"`
 	MemOpMode          string `json:"MemOpMode"`
-	Proc1Brand         string `json:"Proc1Brand"`
+	ProcBrand          string `json:"Proc1Brand"`
 	ProcCoreSpeed      string `json:"ProcCoreSpeed"`
-	Proc1NumCores      int    `json:"Proc1NumCores"`
+	ProcNumCores       int    `json:"Proc1NumCores"`
 	ProcBusSpeed       string `json:"ProcBusSpeed"`
 	LogicalProc        string `json:"LogicalProc"`
 	ProcVirtualization string `json:"ProcVirtualization"`

@@ -1,9 +1,13 @@
 package util
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
 	"reflect"
 	"strconv"
+
+	"golang.org/x/crypto/ssh"
 )
 
 // PrettyPrint to print struct in a readable way
@@ -76,4 +80,22 @@ func StructConv(args ...interface{}) interface{} {
 		rets = append(rets, r)
 	}
 	return rets
+}
+
+func ExecCmd(client *ssh.Client, query string) (bytes.Buffer, error) {
+
+	session, err := client.NewSession()
+	if err != nil {
+		log.Fatal("Failed to create session: ", err)
+	}
+	defer session.Close()
+
+	var b bytes.Buffer
+	session.Stdout = &b
+	if err := session.Run(query); err != nil {
+		log.Fatal("Failed to run: " + err.Error())
+		return b, err
+	}
+	//fmt.Println(b.String())
+	return b, nil
 }

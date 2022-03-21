@@ -10,13 +10,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"reflect"
 	"strconv"
 
 	"github.com/da0x/golang/olog"
-	"github.com/kataras/tablewriter"
-	"github.com/lensesio/tableprinter"
+
 	"github.com/spf13/cobra"
 )
 
@@ -131,21 +129,6 @@ func fetchReportData(baseURL, user, pass string) Attribute {
 	attr = biosConfig.Attributes
 
 	return attr
-}
-
-func ShowData(d Attribute) {
-	printer := tableprinter.New(os.Stdout)
-
-	// Optionally, customize the table, import of the underline 'tablewriter' package is required for that.
-	printer.BorderTop, printer.BorderBottom, printer.BorderLeft, printer.BorderRight = true, true, true, true
-	printer.CenterSeparator = "│"
-	printer.ColumnSeparator = "│"
-	printer.RowSeparator = "─"
-	printer.HeaderBgColor = tablewriter.BgBlackColor
-	printer.HeaderFgColor = tablewriter.FgGreenColor
-
-	// Print the slice of structs as table, as shown above.
-	printer.Print(d)
 }
 
 // PrettyPrint to print struct in a readable way

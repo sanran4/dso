@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -79,7 +80,7 @@ func init() {
 	// Making Flags Required
 	osRhelSetCmd.MarkFlagRequired("ip")
 	osRhelSetCmd.MarkFlagRequired("user")
-	osRhelSetCmd.MarkFlagRequired("pass")
+	//osRhelSetCmd.MarkFlagRequired("pass")
 }
 
 func parseAttribute(str string) (attr, val string) {
@@ -120,6 +121,13 @@ func initOsRhelSetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 	portSSH, _ := cmd.Flags().GetString("portSSH")
 	user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
+	var err error
+	if pass == "" {
+		pass, err = util.GetPasswd()
+		if err != nil {
+			log.Printf("error getting password %v", err)
+		}
+	}
 	workload, _ = cmd.Flags().GetString("workload")
 	attribute, _ = cmd.Flags().GetString("attr")
 

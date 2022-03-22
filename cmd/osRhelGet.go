@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/da0x/golang/olog"
@@ -55,7 +56,7 @@ func init() {
 	// Making Flags Required
 	osRhelGetCmd.MarkFlagRequired("ip")
 	osRhelGetCmd.MarkFlagRequired("user")
-	osRhelGetCmd.MarkFlagRequired("pass")
+	//osRhelGetCmd.MarkFlagRequired("pass")
 }
 
 type tunedAdmSettings struct {
@@ -76,6 +77,13 @@ func initOsRhelGetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 	portSSH, _ := cmd.Flags().GetString("portSSH")
 	user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
+	var err error
+	if pass == "" {
+		pass, err = util.GetPasswd()
+		if err != nil {
+			log.Printf("error getting password %v", err)
+		}
+	}
 
 	tunedAdm, _ = cmd.Flags().GetBool("tunedAdm")
 	mssqlConf, _ = cmd.Flags().GetBool("msConf")

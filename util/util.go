@@ -3,11 +3,15 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"reflect"
 	"strconv"
+	"strings"
+	"syscall"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/term"
 )
 
 // PrettyPrint to print struct in a readable way
@@ -98,4 +102,15 @@ func ExecCmd(client *ssh.Client, query string) (bytes.Buffer, error) {
 	}
 	//fmt.Println(b.String())
 	return b, nil
+}
+
+func GetPasswd() (string, error) {
+	fmt.Print("Enter Password: ")
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return "", err
+	}
+	fmt.Println()
+	password := string(bytePassword)
+	return strings.TrimSpace(password), nil
 }

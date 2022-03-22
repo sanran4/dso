@@ -14,6 +14,7 @@ import (
 	"strconv"
 
 	"github.com/da0x/golang/olog"
+	"github.com/sanran4/dso/util"
 
 	"github.com/spf13/cobra"
 )
@@ -46,7 +47,7 @@ func init() {
 	// Making Flags Required
 	reportCmd.MarkFlagRequired("idracIP")
 	reportCmd.MarkFlagRequired("user")
-	reportCmd.MarkFlagRequired("pass")
+	//reportCmd.MarkFlagRequired("pass")
 }
 
 type AttrConv struct {
@@ -89,6 +90,13 @@ func createURL(cmd *cobra.Command, args []string) (uri, usr, pas string) {
 	idracIP, _ := cmd.Flags().GetString("idracIP")
 	user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
+	var err error
+	if pass == "" {
+		pass, err = util.GetPasswd()
+		if err != nil {
+			log.Printf("error getting password %v", err)
+		}
+	}
 
 	//fmt.Printf("idracIP %s\nuser %s\npass %s\n", idracIP, user, pass)
 	baseURL := "https://" + idracIP + "/redfish/v1/Systems/System.Embedded.1/Bios"

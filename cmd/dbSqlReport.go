@@ -7,6 +7,7 @@ import (
 
 	"github.com/da0x/golang/olog"
 	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/sanran4/dso/util"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +25,13 @@ dso db sql report --instance=10.0.0.1 --user=user1 --pass=pass1`,
 		//database, _ := cmd.Flags().GetInt("database")
 		user, _ := cmd.Flags().GetString("user")
 		pass, _ := cmd.Flags().GetString("pass")
+		var err error
+		if pass == "" {
+			pass, err = util.GetPasswd()
+			if err != nil {
+				log.Printf("error getting password %v", err)
+			}
+		}
 
 		connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", server, user, pass, port)
 
@@ -106,7 +114,7 @@ func init() {
 	// Making Flags Required
 	dbSqlReportCmd.MarkFlagRequired("server")
 	dbSqlReportCmd.MarkFlagRequired("user")
-	dbSqlReportCmd.MarkFlagRequired("pass")
+	//dbSqlReportCmd.MarkFlagRequired("pass")
 }
 
 type instanceConfig struct {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/da0x/golang/olog"
+	"github.com/sanran4/dso/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
@@ -42,7 +43,7 @@ func init() {
 	// Making Flags Required
 	osRhelReportCmd.MarkFlagRequired("ip")
 	osRhelReportCmd.MarkFlagRequired("user")
-	osRhelReportCmd.MarkFlagRequired("pass")
+	//osRhelReportCmd.MarkFlagRequired("pass")
 }
 
 func execCmd(client *ssh.Client, query string) (bytes.Buffer, error) {
@@ -69,6 +70,13 @@ func InitialSetup(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 	portSSH, _ := cmd.Flags().GetString("portSSH")
 	user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
+	var err error
+	if pass == "" {
+		pass, err = util.GetPasswd()
+		if err != nil {
+			log.Printf("error getting password %v", err)
+		}
+	}
 
 	config := &ssh.ClientConfig{
 		User: user,

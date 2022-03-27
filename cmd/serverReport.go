@@ -20,14 +20,11 @@ import (
 )
 
 // reportCmd represents the report command
-var reportCmd = &cobra.Command{
+var serverReportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "Fetch report for the server bios",
-	Long: `This report command will pull report from the server bios
-Example:
-dso server bios report -I 10.0.0.1 -U user1 -P pass1
-dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
-	Example: `dso server bios report -I 10.0.0.1 -U user1 -P pass1
+	Long:  `This report command will pull report from the server bios`,
+	Example: `dso server report -I 10.0.0.1 -U user1 -P pass1
 dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ShowBios(cmd, args)
@@ -35,18 +32,18 @@ dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
 }
 
 func init() {
-	biosCmd.AddCommand(reportCmd)
+	serverCmd.AddCommand(serverReportCmd)
 
 	// Flags
 	// Format: biosCmd.PersistentFlags().StringP(name string, shorthand string, value string, usage string)
-	reportCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
-	reportCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
-	reportCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
+	serverReportCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
+	serverReportCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
+	serverReportCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
-	reportCmd.MarkFlagRequired("idracIP")
-	reportCmd.MarkFlagRequired("user")
+	serverReportCmd.MarkFlagRequired("idracIP")
+	serverReportCmd.MarkFlagRequired("user")
 	//reportCmd.MarkFlagRequired("pass")
 }
 
@@ -78,6 +75,7 @@ type Attribute struct {
 	NvmeMode           string `json:"NvmeMode"`
 	BootMode           string `json:"BootMode"`
 	SysProfile         string `json:"SysProfile"`
+	WorkloadProfile    string `json:"WorkloadProfile"`
 	SecureBoot         string `json:"SecureBoot"`
 }
 

@@ -1,24 +1,21 @@
 package cmd
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 
-	"github.com/da0x/golang/olog"
 	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/sanran4/dso/util"
 	"github.com/spf13/cobra"
 )
 
 // reportCmd represents the report command
-var dbSqlReportCmd = &cobra.Command{
-	Use:   "report",
+var dbSqlGetCmd = &cobra.Command{
+	Use:   "get",
 	Short: "Fetch report from SQL Server",
 	Long:  `This report command will pull report from SQL Server`,
-	Example: `dso db sql report -i 10.0.0.1 -u user1 -p pass1 
-	dso db sql report -i 10.0.0.1 -u user1
-	dso db sql report --instance=10.0.0.1 --user=user1 --pass=pass1`,
+	Example: `dso db sql report -i 10.0.0.1 -u user1 -p pass1
+dso db sql report --instance=10.0.0.1 --user=user1 --pass=pass1`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		server, _ := cmd.Flags().GetString("server")
@@ -67,13 +64,6 @@ var dbSqlReportCmd = &cobra.Command{
 		fmt.Println("SQL Server Instance Configuration:")
 		getInstanceConfig(connString, query3)
 
-		var query4 string = `
-		SELECT name as ConfigName,value as ConfigValue FROM sys.database_scoped_configurations 
-		WHERE configuration_id in (1,2,4,8,13,16,18,26,35)
-		`
-		fmt.Println("SQL Server database scope Configuration:")
-		getDbScopeConfig(connString, query4)
-
 		var query5 string = `
 		CREATE TABLE #FileSize
 		(DbName NVARCHAR(128), 
@@ -108,67 +98,29 @@ var dbSqlReportCmd = &cobra.Command{
 }
 
 func init() {
-	sqlCmd.AddCommand(dbSqlReportCmd)
+	sqlCmd.AddCommand(dbSqlGetCmd)
 
 	// Flags
 	// Format: biosCmd.PersistentFlags().StringP(name string, shorthand string, value string, usage string)
-	dbSqlReportCmd.Flags().StringP("user", "U", "", "Username to connect to SQL Server instance")
-	dbSqlReportCmd.Flags().StringP("pass", "P", "", "Password to connect to SQL Server instance")
-	dbSqlReportCmd.Flags().StringP("server", "S", "", "SQL Server instance name/IP address")
-	dbSqlReportCmd.Flags().Int("port", 1433, "SQL Server instance port")
-	dbSqlReportCmd.Flags().String("db", "", "SQL Server database name")
+	dbSqlGetCmd.Flags().StringP("user", "U", "", "Username to connect to SQL Server instance")
+	dbSqlGetCmd.Flags().StringP("pass", "P", "", "Password to connect to SQL Server instance")
+	dbSqlGetCmd.Flags().StringP("server", "S", "", "SQL Server instance name/IP address")
+	dbSqlGetCmd.Flags().Int("port", 1433, "SQL Server instance port")
+	dbSqlGetCmd.Flags().String("db", "", "SQL Server database name")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
-	dbSqlReportCmd.MarkFlagRequired("server")
-	dbSqlReportCmd.MarkFlagRequired("user")
+	dbSqlGetCmd.MarkFlagRequired("server")
+	dbSqlGetCmd.MarkFlagRequired("user")
 	//dbSqlReportCmd.MarkFlagRequired("pass")
 }
 
+/*
 type instanceConfig struct {
 	ConfigName        string `json:"ConfigName"`
 	ConfigValue       string `json:"ConfigValue"`
 	ConfigValueInUse  string `json:"ConfigValueInUse"`
 	ConfigDescription string `json:"ConfigDescription"`
-}
-type DbScopeConfig struct {
-	ConfigName  string `json:"ConfigName"`
-	ConfigValue string `json:"ConfigValue"`
-}
-
-func getDbScopeConfig(connStr, query string) {
-	conn, err := sql.Open("mssql", connStr)
-	if err != nil {
-		log.Fatal("Open connection failed:", err.Error())
-	}
-	defer conn.Close()
-
-	stmt, err := conn.Prepare(query)
-	if err != nil {
-		log.Fatal("Prepare failed:", err.Error())
-	}
-	defer stmt.Close()
-	totalRows, err := stmt.Query()
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
-	defer totalRows.Close()
-	mc1 := []DbScopeConfig{}
-	for totalRows.Next() {
-		c1 := DbScopeConfig{}
-		err = totalRows.Scan(&c1.ConfigName, &c1.ConfigValue)
-		if err != nil {
-			panic(err)
-		}
-
-		mc1 = append(mc1, c1)
-	}
-	err = totalRows.Err()
-	if err != nil {
-		panic(err)
-	}
-	olog.Print(mc1)
 }
 
 func getInstanceConfig(connStr, query string) {
@@ -325,3 +277,4 @@ func GetFileDetails(connStr, query string) {
 	//tableprinter.PrintJSON(os.Stdout, b)
 	olog.Print(mc1)
 }
+*/

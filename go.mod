@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/da0x/golang v1.0.4
 	github.com/denisenkom/go-mssqldb v0.12.0
+	github.com/sijms/go-ora/v2 v2.4.11
 	github.com/spf13/cobra v1.4.0
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1

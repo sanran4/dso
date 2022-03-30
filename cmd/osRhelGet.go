@@ -18,9 +18,10 @@ var mssqlConf bool = false
 var osRhelGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Fetch values for best practice settings",
-	Long:  `This report command will pull general report from the RHEL OS within your solution`,
-	Example: `dso os rhel report -I 10.0.0.1 -U user1 -P pass1
-dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1`,
+	Long:  `get module for rhel command will pull best practice specific settings from the RHEL OS within your solution`,
+	Example: `dso os rhel get --tunedadm -I 10.0.0.1 -U user1 -P pass1
+dso os rhel get --msconf -I 10.0.0.1 -U user1 -P pass1
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := initOsRhelGetStep(cmd, args)
 		if err != nil {
@@ -36,6 +37,11 @@ dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1`,
 			fmt.Println("MSSQL-Conf Settings:")
 			getMssqlConfSettings(c)
 		}
+		if !tunedAdm && !mssqlConf {
+			fmt.Println("no sub flag (--tunedadm or --msconf) provided")
+			fmt.Println("use below instruction to see help and examples for this command")
+			fmt.Println("dso os rhel get --help")
+		}
 
 	},
 }
@@ -49,8 +55,8 @@ func init() {
 	osRhelGetCmd.Flags().StringP("portSSH", "p", "22", "SSH port for connecting to RHEL os")
 	osRhelGetCmd.Flags().StringP("user", "U", "", "Username for the RHEL operating system")
 	osRhelGetCmd.Flags().StringP("pass", "P", "", "Password for the RHEL operating system")
-	osRhelGetCmd.Flags().BoolP("tunedAdm", "t", false, "Get setting values for tuned-Adm profile")
-	osRhelGetCmd.Flags().BoolP("msConf", "m", false, "Get setting values for mssql-conf")
+	osRhelGetCmd.Flags().Bool("tunedadm", false, "Get setting values for tuned-Adm profile")
+	osRhelGetCmd.Flags().Bool("msconf", false, "Get setting values for mssql-conf")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
@@ -85,8 +91,8 @@ func initOsRhelGetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 		}
 	}
 
-	tunedAdm, _ = cmd.Flags().GetBool("tunedAdm")
-	mssqlConf, _ = cmd.Flags().GetBool("msConf")
+	tunedAdm, _ = cmd.Flags().GetBool("tunedadm")
+	mssqlConf, _ = cmd.Flags().GetBool("msconf")
 
 	config := &ssh.ClientConfig{
 		User: user,

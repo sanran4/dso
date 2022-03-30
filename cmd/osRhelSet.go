@@ -18,17 +18,18 @@ var attribute string = ""
 
 var osRhelSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "Set best practice settings values",
-	Long:  `This set command will set Dell Recomended best practice values for SQL/Oracle  solution on RHEL OS`,
+	Short: "Set best practice settings at operating system layer",
+	Long:  `This set module for RHEL command will set Dell Recomended best practice values for SQL/Oracle solution on RHEL OS`,
 	Example: `
-Ex1:- dso os rhel set -I 10.0.0.1 -U user1 -P pass1 -t // set Tuned-Adm profile for SQL Server workload
-Ex2:- dso os rhel set -I 10.0.0.1 -U user1 -P pass1 --tunedAdm // set Tuned-Adm profile for SQL Server workload
-Ex3:- dso os rhel set -I 10.0.0.1 -U user1 -P pass1 -w sql -t // set Tuned-Adm profile for SQL Server workload
-Ex4:- dso os rhel set -I 10.0.0.1 -U user1 -P pass1 -w sql -m // set MSSQL-CONF best practice for SQL Server workload
-Ex5:- dso os rhel set -I 10.0.0.1 -U user1 -P pass1 --msConf // set MSSQL-CONF best practice for SQL Server workload
-Ex6:- dso os rhel set -I 10.0.0.1 -U user1 -P pass1 -w sql -t -m // set Tuned-Adm & MSSQL-CONF best practice for SQL Server workload
-Ex7:- dso os rhel set -I 10.0.0.1 -U user1 -P pass1 -w sql -A "memory.memorylimitmb=8192" // set SQL Server memory limit using mssql-conf
-Ex8:- dso os rhel set -I 10.0.0.1 -U user1 -P pass1 -w sql -A "traceflag=834" // set SQL Server traceflag
+Ex1:- dso os rhel set --tunedadm -I 10.0.0.1 -U user1 -P pass1                // set Tuned-Adm profile for SQL Server workload
+Ex2:- dso os rhel set -w sql --tunedadm -I 10.0.0.1 -U user1 -P pass1         // set Tuned-Adm profile for SQL Server workload
+Ex3:- dso os rhel set -w sql --msconf -I 10.0.0.1 -U user1 -P pass1           // set MSSQL-CONF best practice for SQL Server workload
+Ex4:- dso os rhel set --msconf -I 10.0.0.1 -U user1 -P pass1                  // set MSSQL-CONF best practice for SQL Server workload
+Ex5:- dso os rhel set --tunedadm --msconf-I 10.0.0.1 -U user1 -P pass1        // set both Tuned-Adm & MSSQL-CONF best practices for SQL Server workload
+Ex6:- dso os rhel set -w sql -A "memory.memorylimitmb=8192" -I 10.0.0.1 -U user1 -P pass1  // set SQL Server memory limit using mssql-conf
+Ex7:- dso os rhel set -A "memory.memorylimitmb=8192" -I 10.0.0.1 -U user1 -P pass1  // set SQL Server memory limit using mssql-conf
+Ex8:- dso os rhel set -w sql -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1 // set SQL Server traceflag
+Ex9:- dso os rhel set -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1        // set SQL Server traceflag
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := initOsRhelSetStep(cmd, args)
@@ -58,6 +59,11 @@ Ex8:- dso os rhel set -I 10.0.0.1 -U user1 -P pass1 -w sql -A "traceflag=834" //
 						restartSQL(c)
 					}
 				}
+				if !tunedAdm && !mssqlConf {
+					fmt.Println("no sub flag (--tunedadm or --msconf) provided")
+					fmt.Println("use below instruction to see help and examples for this command")
+					fmt.Println("dso os rhel set --help")
+				}
 			}
 		}
 	},
@@ -71,10 +77,10 @@ func init() {
 	osRhelSetCmd.Flags().StringP("portSSH", "p", "22", "SSH port for connecting to RHEL os")
 	osRhelSetCmd.Flags().StringP("user", "U", "", "Username for the RHEL operating system")
 	osRhelSetCmd.Flags().StringP("pass", "P", "", "Password for the RHEL operating system")
-	osRhelSetCmd.Flags().StringP("workload", "w", "sql", "Application workload (sql/oracle)")
-	osRhelSetCmd.Flags().BoolP("tunedAdm", "t", false, "Set settings for optimal tuned-Adm profile")
-	osRhelSetCmd.Flags().BoolP("msConf", "m", false, "Set setting for optimal mssql-conf")
-	osRhelSetCmd.Flags().StringP("attr", "A", "", "Set individual attributes (ex:- -A \"memory.memorylimitmb=8192\") please help for more info.")
+	osRhelSetCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/oracle]")
+	osRhelSetCmd.Flags().Bool("tunedadm", false, "Set settings for optimal tuned-Adm profile")
+	osRhelSetCmd.Flags().Bool("msconf", false, "Set setting for optimal mssql-conf")
+	osRhelSetCmd.Flags().StringP("attr", "A", "", "Set individual attributes for mssql-conf(ex: -A \"memory.memorylimitmb=8192\") see help for more info.")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
@@ -131,8 +137,8 @@ func initOsRhelSetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 	workload, _ = cmd.Flags().GetString("workload")
 	attribute, _ = cmd.Flags().GetString("attr")
 
-	tunedAdm, _ = cmd.Flags().GetBool("tunedAdm")
-	mssqlConf, _ = cmd.Flags().GetBool("msConf")
+	tunedAdm, _ = cmd.Flags().GetBool("tunedadm")
+	mssqlConf, _ = cmd.Flags().GetBool("msconf")
 
 	config := &ssh.ClientConfig{
 		User: user,

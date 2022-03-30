@@ -9,9 +9,11 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/da0x/golang/olog"
 	"github.com/sanran4/dso/util"
@@ -103,27 +105,54 @@ func createURL(cmd *cobra.Command, args []string) (uri, usr, pas string) {
 
 func fetchReportData(baseURL, user, pass string) Attribute {
 
-	// TODO: This is insecure; use only in dev environments.
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		Dial: (&net.Dialer{
+			Timeout: 10 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 10 * time.Second,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 	}
-	client := &http.Client{Transport: tr}
-
+	// TODO: This is insecure; use only in dev environments.
+	//tr := &http.Transport{
+	//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	//}
+	//client := &http.Client{Transport: tr}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   time.Second * 30,
+	}
+	//fmt.Println(baseURL)
 	req, err := http.NewRequest("GET", baseURL, nil)
 	if err != nil {
 		log.Printf("error creating GET request %v", err)
 	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json;charset=utf-8")
+	req.Header.Add("Cache-Control", "no-cache")
 	req.SetBasicAuth(user, pass)
+
+	//req.Header = http.Header{
+	//	"Content-Type": []string{"application/json;odata.metadata=minimal;charset=utf-8"},
+	//}
 	resp, err := client.Do(req)
 	if err != nil {
 		// handle err
 		log.Printf("error requesting data %v", err)
 	}
+	//if resp.StatusCode == 401 {
+	//	fmt.Printf("\nWARNING, status code %d returned. Incorrect iDRAC username/password or invalid privilege detected.", resp.StatusCode)
+	//	log.Panic("status code 401")
+	//}else if resp.StatusCode != 200{
+	//	fmt.Printf("\nWARNING, iDRAC version installed does not support this feature using Redfish API")
+	//	log.Panic("status code 401")
+	//}
 	defer resp.Body.Close()
 	responseBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("Could not read response body. %v", err)
 	}
+	//fmt.Println(string(responseBytes))
 
 	var biosConfig BiosConfig
 	if err := json.Unmarshal(responseBytes, &biosConfig); err != nil {
@@ -134,6 +163,7 @@ func fetchReportData(baseURL, user, pass string) Attribute {
 	attr := Attribute{}
 	attr = biosConfig.Attributes
 
+	//fmt.Println(attr)
 	return attr
 }
 

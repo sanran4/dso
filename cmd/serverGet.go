@@ -9,9 +9,11 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/da0x/golang/olog"
 	"github.com/sanran4/dso/util"
@@ -70,14 +72,25 @@ func srvGetBiosData(baseURL, user, pass string) {
 
 	// TODO: This is insecure; use only in dev environments.
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		Dial: (&net.Dialer{
+			Timeout: 10 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 10 * time.Second,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 	}
-	client := &http.Client{Transport: tr}
+	//client := &http.Client{Transport: tr}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   time.Second * 30,
+	}
 
 	req, err := http.NewRequest("GET", baseURL, nil)
 	if err != nil {
 		log.Printf("error creating GET request %v", err)
 	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json;charset=utf-8")
+	req.Header.Add("Cache-Control", "no-cache")
 	req.SetBasicAuth(user, pass)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -142,7 +155,7 @@ func srvGetBiosData(baseURL, user, pass string) {
 		sgbs = append(sgbs, l_sgbs)
 	}
 
-	for k, _ := range sgbs {
+	for k := range sgbs {
 		if sgbs[k].RunningValues != sgbs[k].OptimalValues {
 			sgbs[k].Diff = "*"
 		}

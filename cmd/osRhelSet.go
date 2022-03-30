@@ -145,7 +145,7 @@ func initOsRhelSetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 	ipAddr := ip + ":" + portSSH
 	client, err := ssh.Dial("tcp", ipAddr, config)
 	if err != nil {
-		panic("Failed to dial: " + err.Error())
+		//panic("Failed to dial: " + err.Error())
 		return nil, err
 	}
 	//defer client.Close()

@@ -13,9 +13,9 @@ import (
 // pmaxCmd represents the pmax command
 var pmaxCmd = &cobra.Command{
 	Use:   "pmax",
-	Short: "Work with DellEMC PowerMax storage layer of the solution",
+	Short: "This pmax sub-module will Work with DellEMC PowerMax storage layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("Missing command. please see help using below command:")
 		fmt.Println("dso storage pmax -h")
 		fmt.Println("dso storage pmax --help")
 		fmt.Println("dso help storage pmax")

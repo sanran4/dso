@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Sanjeev Ranjan <s_ranjan@dell.com>
 
 */
 package cmd
@@ -13,9 +13,9 @@ import (
 // windowsCmd represents the windows command
 var windowsCmd = &cobra.Command{
 	Use:   "windows",
-	Short: "Work with Microsoft Windows Server layer of the solution",
+	Short: "this sub-module will work with Microsoft Windows Server layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("Missing command. please see help using below command:")
 		fmt.Println("dso os windows -h")
 		fmt.Println("dso os windows --help")
 		fmt.Println("dso help os windows")
@@ -25,13 +25,4 @@ var windowsCmd = &cobra.Command{
 func init() {
 	osCmd.AddCommand(windowsCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// windowsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// windowsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

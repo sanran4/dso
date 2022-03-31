@@ -13,10 +13,10 @@ import (
 // dbCmd represents the db command
 var dbCmd = &cobra.Command{
 	Use:   "db",
-	Short: "Work with database layer of the solution",
+	Short: "This db module will Work with database layer of the solution",
 	//Usage: "dso db [command]",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("Missing sub-modules. please see help using below command:")
 		fmt.Println("dso db -h")
 		fmt.Println("dso db --help")
 		fmt.Println("dso help db")
@@ -25,14 +25,4 @@ var dbCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(dbCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// dbCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// dbCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

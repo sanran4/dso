@@ -13,9 +13,9 @@ import (
 // hypervCmd represents the hyperv command
 var hypervCmd = &cobra.Command{
 	Use:   "hyperv",
-	Short: "Work with Microsoft Hyper-V layer of the solution",
+	Short: "This hyperv sub-module will Work with Microsoft Hyper-V layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("Missing command. please see help using below command:")
 		fmt.Println("dso virtual hyperv -h")
 		fmt.Println("dso virtual hyperv --help")
 		fmt.Println("dso help virtual hyperv")

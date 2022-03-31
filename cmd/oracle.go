@@ -13,9 +13,9 @@ import (
 // oracleCmd represents the oracle command
 var oracleCmd = &cobra.Command{
 	Use:   "oracle",
-	Short: "Work with Oracle database layer of the solution",
+	Short: "This sub-module oracle will Work with Oracle database layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("Missing command. please see help using below command:")
 		fmt.Println("dso db oracle -h")
 		fmt.Println("dso db oracle --help")
 		fmt.Println("dso help db oracle")

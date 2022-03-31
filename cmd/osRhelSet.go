@@ -18,8 +18,8 @@ var attribute string = ""
 
 var osRhelSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "Set best practice settings at operating system layer",
-	Long:  `This set module for RHEL command will set Dell Recomended best practice values for SQL/Oracle solution on RHEL OS`,
+	Short: "This set command with configure Dell Recomended best practice settings at RHEL operating system layer",
+	Long:  `This set command for RHEL sub-module will set Dell Recomended best practice values for SQL/Oracle solution on RHEL OS`,
 	Example: `
 Ex1:- dso os rhel set --tunedadm -I 10.0.0.1 -U user1 -P pass1                // set Tuned-Adm profile for SQL Server workload
 Ex2:- dso os rhel set -w sql --tunedadm -I 10.0.0.1 -U user1 -P pass1         // set Tuned-Adm profile for SQL Server workload

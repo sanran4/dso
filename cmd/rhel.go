@@ -13,9 +13,9 @@ import (
 // rhelCmd represents the rhel command
 var rhelCmd = &cobra.Command{
 	Use:   "rhel",
-	Short: "Work with RHEL (Redhat Enterprise Linux) layer of the solution",
+	Short: "This rhel module will Work with RHEL (Redhat Enterprise Linux) layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("Missing command. please see help using below command:")
 		fmt.Println("dso os rhel -h")
 		fmt.Println("dso os rhel --help")
 		fmt.Println("dso help os rhel")

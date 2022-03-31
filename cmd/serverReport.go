@@ -24,10 +24,13 @@ import (
 // reportCmd represents the report command
 var serverReportCmd = &cobra.Command{
 	Use:   "report",
-	Short: "Fetch report for the server bios",
-	Long:  `This report command will pull report from the server bios`,
-	Example: `dso server report -I 10.0.0.1 -U user1 -P pass1
-dso server bios report --idracIP=10.0.0.1 --user=user1 --pass=pass1`,
+	Short: "This report command will pull general report for server layer of the solution",
+	Long:  `This report command will pull general report for Intel based server layer of the solution`,
+	Example: `
+EX1: dso server report -I 10.0.0.1 -U user1 
+EX1: dso server report -I 10.0.0.1 -U user1 -P pass1
+EX3: dso server report --idracIP=10.0.0.1 --user=user1 --pass=pass1
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ShowBios(cmd, args)
 	},

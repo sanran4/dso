@@ -17,10 +17,13 @@ var mssqlConf bool = false
 
 var osRhelGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "Fetch values for best practice settings",
-	Long:  `get module for rhel command will pull best practice specific settings from the RHEL OS within your solution`,
-	Example: `dso os rhel get --tunedadm -I 10.0.0.1 -U user1 -P pass1
-dso os rhel get --msconf -I 10.0.0.1 -U user1 -P pass1
+	Short: "This get command will pull best practice settings for RHEL OS",
+	Long:  `This get command will pull best practice specific settings from the RHEL operating system within your solution`,
+	Example: `
+Ex1: dso os rhel get --tunedadm -I 10.0.0.1 -U user1 
+Ex2: dso os rhel get --tunedadm -I 10.0.0.1 -U user1 -P pass1
+Ex3: dso os rhel get --msconf -I 10.0.0.1 -U user1 
+Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := initOsRhelGetStep(cmd, args)

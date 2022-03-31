@@ -14,10 +14,13 @@ import (
 
 var osRhelReportCmd = &cobra.Command{
 	Use:   "report",
-	Short: "Fetch report for the RHEL OS",
-	Long:  `This report command will pull general report from the RHEL OS within your solution`,
-	Example: `dso os rhel report -I 10.0.0.1 -U user1 -P pass1
-dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1`,
+	Short: "This report command will pull general report for the RHEL OS",
+	Long:  `This report command will pull general report from the RHEL operating system within your solution`,
+	Example: `
+Ex1: dso os rhel report -I 10.0.0.1 -U user1 -P pass1
+Ex2: dso os rhel report -I 10.0.0.1 -U user1
+Ex3: dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client, err := InitialSetup(cmd, args)
 		if err != nil {

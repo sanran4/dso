@@ -13,9 +13,9 @@ import (
 // storageCmd represents the storage command
 var storageCmd = &cobra.Command{
 	Use:   "storage",
-	Short: "Work with storage layer of the solution",
+	Short: "This module storage will Work with DellEMC storage layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("Missing sub-module. please see help using below command:")
 		fmt.Println("dso storage -h")
 		fmt.Println("dso storage --help")
 		fmt.Println("dso help storage")
@@ -25,13 +25,4 @@ var storageCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(storageCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// storageCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// storageCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -13,7 +13,7 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "dso",
-	Short: "A database solution optimizer ",
+	Short: "A database solution optimizer tool/utility",
 	Long: `dso is a database solution optimizer tool that can be used to:
 - report configuration settings values at all or individual layer within solution
 - report only those settings that are not following best practice recomendations

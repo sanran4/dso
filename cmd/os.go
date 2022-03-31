@@ -13,9 +13,9 @@ import (
 // osCmd represents the os command
 var osCmd = &cobra.Command{
 	Use:   "os",
-	Short: "Work with operating system layer of the solution",
+	Short: "This module os will Work with operating system layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing subcommand. please see help using below command:")
+		fmt.Println("Missing sub-module. please see help using below command:")
 		fmt.Println("dso os -h")
 		fmt.Println("dso os --help")
 		fmt.Println("dso help os")

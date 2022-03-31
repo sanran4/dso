@@ -12,10 +12,13 @@ import (
 // reportCmd represents the report command
 var dbSqlSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "Fetch report from SQL Server",
-	Long:  `This report command will pull report from SQL Server`,
-	Example: `dso db sql set -i 10.0.0.1 -u user1 -p pass1
-dso db sql set --instance=10.0.0.1 --user=user1 --pass=pass1`,
+	Short: "This set command will configure Dell Recomended bast practice settings to SQL Server",
+	Long:  `This set command will configure Dell Recomended bast practice settings to SQL Server`,
+	Example: `
+EX1: dso db sql set -S 10.0.0.1 -U user1 
+EX2: dso db sql set -S 10.0.0.1 -U user1 -P pass1
+EX3: dso db sql set --server=10.0.0.1 --user=user1 --pass=pass1
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		server, _ := cmd.Flags().GetString("server")

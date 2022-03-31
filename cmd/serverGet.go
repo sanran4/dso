@@ -25,7 +25,13 @@ var srvGetBios bool = false
 // serverCmd represents the server command
 var serverGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "Get details and report about server layer of the solution",
+	Short: "This get command will pull best practice settings for server layer of the solution",
+	Long:  `This get command will pull best practice settings for Intel based server layer of the solution`,
+	Example: `
+EX1: dso server get --bios -I 10.0.0.1 -U user1 -P pass1
+EX2: dso server get --bios -I 10.0.0.1 --bios -U user1 -P pass1
+EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		initSrvGet(cmd, args)
 	},

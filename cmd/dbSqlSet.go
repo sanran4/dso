@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/sanran4/dso/util"
@@ -21,10 +22,18 @@ EX3: dso db sql set --server=10.0.0.1 --user=user1 --pass=pass1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		server, _ := cmd.Flags().GetString("server")
+		server, ok := os.LookupEnv("SQL_DB_HOST")
+		if !ok {
+			server, _ = cmd.Flags().GetString("server")
+		}
+		user, ok := os.LookupEnv("SQL_DB_USER")
+		if !ok {
+			user, _ = cmd.Flags().GetString("user")
+		}
+		//server, _ := cmd.Flags().GetString("server")
 		port, _ := cmd.Flags().GetInt("port")
 		//database, _ := cmd.Flags().GetInt("database")
-		user, _ := cmd.Flags().GetString("user")
+		//user, _ := cmd.Flags().GetString("user")
 		pass, _ := cmd.Flags().GetString("pass")
 		var err error
 		if pass == "" {

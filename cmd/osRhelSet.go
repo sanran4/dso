@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -56,6 +57,7 @@ Ex9:- dso os rhel set -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1        //
 					fmt.Scanln(&usrCnf)
 					if strings.ToLower(usrCnf) == "y" {
 						setMsConfigSettings(c)
+						fmt.Println("Restarting SQL Server instance... ")
 						restartSQL(c)
 					}
 				}
@@ -84,8 +86,8 @@ func init() {
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
-	osRhelSetCmd.MarkFlagRequired("ip")
-	osRhelSetCmd.MarkFlagRequired("user")
+	//osRhelSetCmd.MarkFlagRequired("ip")
+	//osRhelSetCmd.MarkFlagRequired("user")
 	//osRhelSetCmd.MarkFlagRequired("pass")
 }
 
@@ -114,18 +116,28 @@ func setAttrSetting(client *ssh.Client, attr, val string) error {
 }
 
 func restartSQL(client *ssh.Client) {
-	cmd1 := `systemctl restart mssql-server`
+	time.Sleep(1 * time.Second)
+	cmd1 := `systemctl restart mssql-server.service`
 	_, err := util.ExecCmd(client, cmd1)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("SQL Server restarted successfully... ")
 }
 
 func initOsRhelSetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 
-	ip, _ := cmd.Flags().GetString("ip")
+	ip, ok := os.LookupEnv("RHEL_OS_HOST")
+	if !ok {
+		ip, _ = cmd.Flags().GetString("ip")
+	}
+	user, ok := os.LookupEnv("RHEL_OS_USER")
+	if !ok {
+		user, _ = cmd.Flags().GetString("user")
+	}
+	//ip, _ := cmd.Flags().GetString("ip")
 	portSSH, _ := cmd.Flags().GetString("portSSH")
-	user, _ := cmd.Flags().GetString("user")
+	//user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
 	var err error
 	if pass == "" {
@@ -228,14 +240,12 @@ func setMsConfigSettings(client *ssh.Client) {
 		panic(err)
 	}
 	//fmt.Println(res.String())
-	time.Sleep(2 * time.Second)
+	//time.Sleep(2 * time.Second)
 
-	cmd2 := `
-systemctl restart mssql-server.service
-`
-	_, err = util.ExecCmd(client, cmd2)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Change completed successfully... ")
+	//cmd2 := `systemctl restart mssql-server.service`
+	//_, err = util.ExecCmd(client, cmd2)
+	//if err != nil {
+	//	panic(err)
+	//}
+	fmt.Println("mssql-conf changes applied successfully... ")
 }

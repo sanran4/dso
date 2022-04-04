@@ -11,6 +11,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -47,8 +48,8 @@ func init() {
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
-	serverReportCmd.MarkFlagRequired("idracIP")
-	serverReportCmd.MarkFlagRequired("user")
+	//serverReportCmd.MarkFlagRequired("idracIP")
+	//serverReportCmd.MarkFlagRequired("user")
 	//reportCmd.MarkFlagRequired("pass")
 }
 
@@ -90,8 +91,16 @@ type BiosConfig struct {
 }
 
 func createURL(cmd *cobra.Command, args []string) (uri, usr, pas string) {
-	idracIP, _ := cmd.Flags().GetString("idracIP")
-	user, _ := cmd.Flags().GetString("user")
+	idracIP, ok := os.LookupEnv("SERVER_IDRAC_HOST")
+	if !ok {
+		idracIP, _ = cmd.Flags().GetString("idracIP")
+	}
+	user, ok := os.LookupEnv("SERVER_IDRAC_USER")
+	if !ok {
+		user, _ = cmd.Flags().GetString("user")
+	}
+	//idracIP, _ := cmd.Flags().GetString("idracIP")
+	//user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
 	var err error
 	if pass == "" {

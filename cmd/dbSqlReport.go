@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/da0x/golang/olog"
 	_ "github.com/denisenkom/go-mssqldb"
@@ -23,10 +24,18 @@ EX3: dso db sql report --server=10.0.0.1 --user=user1 --pass=pass1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		server, _ := cmd.Flags().GetString("server")
+		server, ok := os.LookupEnv("SQL_DB_HOST")
+		if !ok {
+			server, _ = cmd.Flags().GetString("server")
+		}
+		user, ok := os.LookupEnv("SQL_DB_USER")
+		if !ok {
+			user, _ = cmd.Flags().GetString("user")
+		}
+		//user, _ := cmd.Flags().GetString("user")
 		port, _ := cmd.Flags().GetInt("port")
 		//database, _ := cmd.Flags().GetInt("database")
-		user, _ := cmd.Flags().GetString("user")
+
 		pass, _ := cmd.Flags().GetString("pass")
 		var err error
 		if pass == "" {
@@ -122,8 +131,8 @@ func init() {
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
-	dbSqlReportCmd.MarkFlagRequired("server")
-	dbSqlReportCmd.MarkFlagRequired("user")
+	//dbSqlReportCmd.MarkFlagRequired("server")
+	//dbSqlReportCmd.MarkFlagRequired("user")
 	//dbSqlReportCmd.MarkFlagRequired("pass")
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/da0x/golang/olog"
@@ -44,8 +45,8 @@ func init() {
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
-	osRhelReportCmd.MarkFlagRequired("ip")
-	osRhelReportCmd.MarkFlagRequired("user")
+	//osRhelReportCmd.MarkFlagRequired("ip")
+	//osRhelReportCmd.MarkFlagRequired("user")
 	//osRhelReportCmd.MarkFlagRequired("pass")
 }
 
@@ -69,9 +70,17 @@ func execCmd(client *ssh.Client, query string) (bytes.Buffer, error) {
 
 func InitialSetup(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 
-	ip, _ := cmd.Flags().GetString("ip")
+	ip, ok := os.LookupEnv("RHEL_OS_HOST")
+	if !ok {
+		ip, _ = cmd.Flags().GetString("ip")
+	}
+	user, ok := os.LookupEnv("RHEL_OS_USER")
+	if !ok {
+		user, _ = cmd.Flags().GetString("user")
+	}
+	//ip, _ := cmd.Flags().GetString("ip")
 	portSSH, _ := cmd.Flags().GetString("portSSH")
-	user, _ := cmd.Flags().GetString("user")
+	//user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
 	var err error
 	if pass == "" {
@@ -103,8 +112,6 @@ func InitialSetup(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 type OsSetting struct {
 	Settings      string `json:"Settings"`
 	RunningValues string `json:"RunningValues"`
-	OptimalValues string `json:"OptimalValues"`
-	Diff          string `json:"Diff"`
 }
 
 func getSysctlConfig(client *ssh.Client) {
@@ -128,47 +135,5 @@ func getSysctlConfig(client *ssh.Client) {
 		}
 	}
 
-	for k := range osdata {
-		//oss := osdata[k].Settings
-		switch osdata[k].Settings {
-		case "kernel.numa_balancing":
-			osdata[k].OptimalValues = "0"
-		case "kernel.numa_balancing_scan_delay_ms":
-			osdata[k].OptimalValues = "1000"
-		case "kernel.numa_balancing_scan_period_max_ms":
-			osdata[k].OptimalValues = "60000"
-		case "kernel.numa_balancing_scan_period_min_ms":
-			osdata[k].OptimalValues = "1000"
-		case "kernel.numa_balancing_scan_size_mb":
-			osdata[k].OptimalValues = "256"
-		case "net.core.rmem_default":
-			osdata[k].OptimalValues = "262144"
-		case "net.core.rmem_max":
-			osdata[k].OptimalValues = "4194304"
-		case "net.core.wmem_default":
-			osdata[k].OptimalValues = "262144"
-		case "net.core.wmem_max":
-			osdata[k].OptimalValues = "1048576"
-		case "vm.dirty_background_ratio":
-			osdata[k].OptimalValues = "3"
-		case "vm.dirty_expire_centisecs":
-			osdata[k].OptimalValues = "500"
-		case "vm.dirty_ratio":
-			osdata[k].OptimalValues = "80"
-		case "vm.dirty_writeback_centisecs":
-			osdata[k].OptimalValues = "100"
-		case "vm.max_map_count":
-			osdata[k].OptimalValues = "1600000"
-		case "vm.swappiness":
-			osdata[k].OptimalValues = "1"
-		case "kernel.sched_wakeup_granularity_ns":
-			osdata[k].OptimalValues = "2000000"
-		case "kernel.sched_min_granularity_ns":
-			osdata[k].OptimalValues = "15000000"
-		}
-		if osdata[k].RunningValues != osdata[k].OptimalValues {
-			osdata[k].Diff = "*"
-		}
-	}
 	olog.Print(osdata)
 }

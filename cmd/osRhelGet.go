@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/da0x/golang/olog"
@@ -63,8 +64,8 @@ func init() {
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
-	osRhelGetCmd.MarkFlagRequired("ip")
-	osRhelGetCmd.MarkFlagRequired("user")
+	//osRhelGetCmd.MarkFlagRequired("ip")
+	//osRhelGetCmd.MarkFlagRequired("user")
 	//osRhelGetCmd.MarkFlagRequired("pass")
 }
 
@@ -82,9 +83,17 @@ type mssqlConfSettings struct {
 
 func initOsRhelGetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 
-	ip, _ := cmd.Flags().GetString("ip")
+	ip, ok := os.LookupEnv("RHEL_OS_HOST")
+	if !ok {
+		ip, _ = cmd.Flags().GetString("ip")
+	}
+	user, ok := os.LookupEnv("RHEL_OS_USER")
+	if !ok {
+		user, _ = cmd.Flags().GetString("user")
+	}
+	//ip, _ := cmd.Flags().GetString("ip")
 	portSSH, _ := cmd.Flags().GetString("portSSH")
-	user, _ := cmd.Flags().GetString("user")
+	//user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
 	var err error
 	if pass == "" {

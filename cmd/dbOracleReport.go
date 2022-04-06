@@ -5,9 +5,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"database/sql/driver"
 	"fmt"
-	"io"
 	"log"
 	"os"
 
@@ -175,6 +173,8 @@ func getOrclDataFile(connStr, query string) {
 	//fmt.Println(odf)
 	olog.Print(sodf)
 }
+
+/*
 func getOrclFileDetails(connStr, query string) {
 	DB, err := go_ora.NewConnection(connStr)
 	dieOnError("Can't open the driver:", err)
@@ -215,3 +215,4 @@ func Record(columns []string, values []driver.Value) {
 	}
 	fmt.Println()
 }
+*/

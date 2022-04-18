@@ -38,8 +38,8 @@ Ex9:- dso os rhel set -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1        //
 			panic(err)
 		}
 		defer c.Close()
+		var usrCnf string = "n"
 		if workload == "sql" {
-			var usrCnf string = "n"
 			if attribute != "" {
 				att, val := parseAttribute(attribute)
 				fmt.Println("This action require SQL Server instance restart. Are you sure want to continue? (y/n): ")
@@ -50,7 +50,11 @@ Ex9:- dso os rhel set -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1        //
 				}
 			} else {
 				if tunedAdm {
-					setTunedAdmSettings(c)
+					fmt.Println("This action will change kernel parameters. Are you sure want to continue? (y/n): ")
+					fmt.Scanln(&usrCnf)
+					if strings.ToLower(usrCnf) == "y" {
+						setTunedAdmSettingsSql(c)
+					}
 				}
 				if mssqlConf {
 					fmt.Println("This action require SQL Server instance restart. Are you sure want to continue? (y/n): ")
@@ -68,6 +72,15 @@ Ex9:- dso os rhel set -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1        //
 				}
 			}
 		}
+		if workload == "orcl" {
+			if tunedAdm {
+				fmt.Println("This action will change kernel parameters. Are you sure want to continue? (y/n): ")
+				fmt.Scanln(&usrCnf)
+				if strings.ToLower(usrCnf) == "y" {
+					setTunedAdmSettingsOrcl(c)
+				}
+			}
+		}
 	},
 }
 
@@ -79,7 +92,7 @@ func init() {
 	osRhelSetCmd.Flags().StringP("portSSH", "p", "22", "SSH port for connecting to RHEL os")
 	osRhelSetCmd.Flags().StringP("user", "U", "", "Username for the RHEL operating system")
 	osRhelSetCmd.Flags().StringP("pass", "P", "", "Password for the RHEL operating system")
-	osRhelSetCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/oracle]")
+	osRhelSetCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
 	osRhelSetCmd.Flags().Bool("tunedadm", false, "Set settings for optimal tuned-Adm profile")
 	osRhelSetCmd.Flags().Bool("msconf", false, "Set setting for optimal mssql-conf")
 	osRhelSetCmd.Flags().StringP("attr", "A", "", "Set individual attributes for mssql-conf(ex: -A \"memory.memorylimitmb=8192\") see help for more info.")
@@ -171,9 +184,9 @@ func initOsRhelSetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 	return client, nil
 }
 
-func setTunedAdmSettings(client *ssh.Client) {
+func setTunedAdmSettingsOrcl(client *ssh.Client) {
 	cmd1 := `
-	mkdir -p /usr/lib/tuned/mssql
+	mkdir -p /usr/lib/tuned/dell_oracle_oltp
 	`
 	_, err := util.ExecCmd(client, cmd1)
 	if err != nil {
@@ -182,13 +195,75 @@ func setTunedAdmSettings(client *ssh.Client) {
 	//fmt.Println(res.String())
 
 	cmd2 := `
-cat > /usr/lib/tuned/mssql/tuned.conf << "EOF"
+cat > /usr/lib/tuned/dell_oracle_oltp/tuned.conf << "EOF"
 #
-# A Tuned configuration for SQL Server on Linux
+# Dell Custom tuned configuration for OLTP workload on Oracle database
 #
 
 [main]
-summary=Optimize for Microsoft SQL Server
+summary=Optimize for OLTP workload on Oracle RDBMS
+include=throughput-performance
+
+[sysctl]
+vm.swappiness = 10
+vm.dirty_background_ratio = 3
+vm.dirty_ratio = 40
+vm.dirty_expire_centisecs = 500
+vm.dirty_writeback_centisecs = 100
+kernel.shmmax = 4398046511104
+kernel.shmall = 1073741824
+kernel.shmmni = 4096
+kernel.sem = 250 32000 100 128
+fs.file-max = 6815744
+fs.aio-max-nr = 1048576
+net.ipv4.ip_local_port_range = 9000 65499
+net.core.rmem_default = 262144
+net.core.rmem_max = 4194304
+net.core.wmem_default = 262144
+net.core.wmem_max = 1048576
+kernel.panic_on_oops = 1
+kernel.numa_balancing=0
+
+[vm]
+transparent_hugepages=never
+EOF
+`
+	_, err = execCmd(client, cmd2)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println(res2.String())
+
+	cmd3 := `
+chmod +x /usr/lib/tuned/dell_oracle_oltp/tuned.conf
+tuned-adm profile dell_oracle_oltp
+tuned-adm active
+`
+	res3, err := execCmd(client, cmd3)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(res3.String())
+}
+
+func setTunedAdmSettingsSql(client *ssh.Client) {
+	cmd1 := `
+	mkdir -p /usr/lib/tuned/dell_mssql_oltp
+	`
+	_, err := util.ExecCmd(client, cmd1)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println(res.String())
+
+	cmd2 := `
+cat > /usr/lib/tuned/dell_mssql_oltp/tuned.conf << "EOF"
+#
+# A Tuned configuration for OLTP workload on SQL Server running on Linux
+#
+
+[main]
+summary=Optimize for OLTP workload on Microsoft SQL Server
 include=throughput-performance
 
 [cpu]
@@ -220,8 +295,8 @@ EOF
 	//fmt.Println(res2.String())
 
 	cmd3 := `
-chmod +x /usr/lib/tuned/mssql/tuned.conf
-tuned-adm profile mssql
+chmod +x /usr/lib/tuned/dell_mssql_oltp/tuned.conf
+tuned-adm profile dell_mssql_oltp
 tuned-adm active
 `
 	res3, err := execCmd(client, cmd3)

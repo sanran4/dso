@@ -16,6 +16,8 @@ import (
 var tunedAdm bool = false
 var mssqlConf bool = false
 
+//var workload string = "sql"
+
 var osRhelGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "This get command will pull best practice settings for RHEL OS",
@@ -33,18 +35,26 @@ Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
 		}
 		defer c.Close()
 
-		if tunedAdm {
-			fmt.Println("Tuned-Adm Settings:")
-			getTunedAdmSettings(c)
+		if workload == "sql" {
+			if tunedAdm {
+				fmt.Println("Tuned-Adm Settings:")
+				getTunedAdmSettingsSql(c)
+			}
+			if mssqlConf {
+				fmt.Println("MSSQL-Conf Settings:")
+				getMssqlConfSettings(c)
+			}
+			if !tunedAdm && !mssqlConf {
+				fmt.Println("no sub flag (--tunedadm or --msconf) provided")
+				fmt.Println("use below instruction to see help and examples for this command")
+				fmt.Println("dso os rhel get --help")
+			}
 		}
-		if mssqlConf {
-			fmt.Println("MSSQL-Conf Settings:")
-			getMssqlConfSettings(c)
-		}
-		if !tunedAdm && !mssqlConf {
-			fmt.Println("no sub flag (--tunedadm or --msconf) provided")
-			fmt.Println("use below instruction to see help and examples for this command")
-			fmt.Println("dso os rhel get --help")
+		if workload == "orcl" {
+			if tunedAdm {
+				fmt.Println("Current Tuned-Adm Settings:")
+				getTunedAdmSettingsOrcl(c)
+			}
 		}
 
 	},
@@ -59,9 +69,9 @@ func init() {
 	osRhelGetCmd.Flags().StringP("portSSH", "p", "22", "SSH port for connecting to RHEL os")
 	osRhelGetCmd.Flags().StringP("user", "U", "", "Username for the RHEL operating system")
 	osRhelGetCmd.Flags().StringP("pass", "P", "", "Password for the RHEL operating system")
+	osRhelGetCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
 	osRhelGetCmd.Flags().Bool("tunedadm", false, "Get setting values for tuned-Adm profile")
 	osRhelGetCmd.Flags().Bool("msconf", false, "Get setting values for mssql-conf")
-
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
 	//osRhelGetCmd.MarkFlagRequired("ip")
@@ -103,6 +113,7 @@ func initOsRhelGetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 		}
 	}
 
+	workload, _ = cmd.Flags().GetString("workload")
 	tunedAdm, _ = cmd.Flags().GetBool("tunedadm")
 	mssqlConf, _ = cmd.Flags().GetBool("msconf")
 
@@ -125,7 +136,72 @@ func initOsRhelGetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 	return client, nil
 }
 
-func getTunedAdmSettings(client *ssh.Client) {
+func getTunedAdmSettingsOrcl(client *ssh.Client) {
+	cmd1 := `
+	sysctl vm.swappiness vm.dirty_background_ratio vm.dirty_ratio vm.dirty_expire_centisecs vm.dirty_writeback_centisecs kernel.shmmax kernel.shmall kernel.shmmni fs.file-max fs.aio-max-nr net.core.rmem_default net.core.rmem_max net.core.wmem_default net.core.wmem_max kernel.panic_on_oops kernel.numa_balancing | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}" }' && sysctl net.ipv4.ip_local_port_range | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3" "$4 "\"}" }' && sysctl kernel.sem | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3" "$4" "$5" "$6 "\"}" }'
+	`
+	res, err := util.ExecCmd(client, cmd1)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println(res.String())
+	var osdata []tunedAdmSettings
+	for _, m := range strings.Split(res.String(), "\n") {
+		var osd tunedAdmSettings
+		if m != "" {
+			json.Unmarshal([]byte(m), &osd)
+			osdata = append(osdata, osd)
+		}
+	}
+
+	for k := range osdata {
+		//oss := osdata[k].Settings
+		switch osdata[k].Settings {
+		case "kernel.numa_balancing":
+			osdata[k].OptimalValues = "0"
+		case "kernel.shmmax":
+			osdata[k].OptimalValues = "4398046511104"
+		case "kernel.shmall":
+			osdata[k].OptimalValues = "1073741824"
+		case "kernel.shmmni":
+			osdata[k].OptimalValues = "4096"
+		case "kernel.sem":
+			osdata[k].OptimalValues = "250 32000 100 128"
+		case "net.core.rmem_default":
+			osdata[k].OptimalValues = "262144"
+		case "net.core.rmem_max":
+			osdata[k].OptimalValues = "4194304"
+		case "net.core.wmem_default":
+			osdata[k].OptimalValues = "262144"
+		case "net.core.wmem_max":
+			osdata[k].OptimalValues = "1048576"
+		case "net.ipv4.ip_local_port_range":
+			osdata[k].OptimalValues = "9000 65499"
+		case "vm.dirty_background_ratio":
+			osdata[k].OptimalValues = "3"
+		case "vm.dirty_expire_centisecs":
+			osdata[k].OptimalValues = "500"
+		case "vm.dirty_ratio":
+			osdata[k].OptimalValues = "40"
+		case "vm.dirty_writeback_centisecs":
+			osdata[k].OptimalValues = "100"
+		case "vm.swappiness":
+			osdata[k].OptimalValues = "10"
+		case "kernel.panic_on_oops":
+			osdata[k].OptimalValues = "1"
+		case "fs.file-max":
+			osdata[k].OptimalValues = "6815744"
+		case "fs.aio-max-nr":
+			osdata[k].OptimalValues = "1048576"
+		}
+		if osdata[k].RunningValues != osdata[k].OptimalValues {
+			osdata[k].Diff = "*"
+		}
+	}
+	olog.Print(osdata)
+}
+
+func getTunedAdmSettingsSql(client *ssh.Client) {
 	cmd1 := `
 	sysctl -a | grep -E 'vm.swappiness|vm.dirty_background_ratio|vm.dirty_ratio|vm.dirty_expire_centisecs|vm.dirty_writeback_centisecs|vm.transparent_hugepages|vm.max_map_count|net.core.rmem_default|net.core.rmem_max|net.core.wmem_default|net.core.wmem_max|kernel.numa_balancing|kernel.sched_min_granularity_ns|kernel.sched_wakeup_granularity_ns' |awk ' {
 		print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}"

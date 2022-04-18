@@ -28,8 +28,14 @@ Ex3: dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1
 			panic(err)
 		}
 		defer client.Close()
-		getSysctlConfig(client)
-		getMssqlConfSettings(client)
+		if workload == "sql" {
+			getSysctlConfigSql(client)
+			getMssqlConfSettings(client)
+		}
+		if workload == "orcl" {
+			getSysctlConfigOrcl(client)
+		}
+
 	},
 }
 
@@ -42,7 +48,7 @@ func init() {
 	osRhelReportCmd.Flags().StringP("portSSH", "p", "22", "SSH port for connecting to RHEL os")
 	osRhelReportCmd.Flags().StringP("user", "U", "", "Username for the RHEL operating system")
 	osRhelReportCmd.Flags().StringP("pass", "P", "", "Password for the RHEL operating system")
-
+	osRhelReportCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
 	//osRhelReportCmd.MarkFlagRequired("ip")
@@ -89,6 +95,7 @@ func InitialSetup(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 			log.Printf("error getting password %v", err)
 		}
 	}
+	workload, _ = cmd.Flags().GetString("workload")
 
 	config := &ssh.ClientConfig{
 		User: user,
@@ -114,7 +121,28 @@ type OsSetting struct {
 	RunningValues string `json:"RunningValues"`
 }
 
-func getSysctlConfig(client *ssh.Client) {
+func getSysctlConfigOrcl(client *ssh.Client) {
+	cmd1 := `
+	sysctl vm.swappiness vm.dirty_background_ratio vm.dirty_ratio vm.dirty_expire_centisecs vm.dirty_writeback_centisecs kernel.shmmax kernel.shmall kernel.shmmni fs.file-max fs.aio-max-nr net.core.rmem_default net.core.rmem_max net.core.wmem_default net.core.wmem_max kernel.panic_on_oops kernel.numa_balancing | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}" }' && sysctl net.ipv4.ip_local_port_range | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3" "$4 "\"}" }' && sysctl kernel.sem | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3" "$4" "$5" "$6 "\"}" }'
+	`
+	res, err := execCmd(client, cmd1)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println(res.String())
+	var osdata []OsSetting
+	for _, m := range strings.Split(res.String(), "\n") {
+		var osd OsSetting
+		if m != "" {
+			json.Unmarshal([]byte(m), &osd)
+			osdata = append(osdata, osd)
+		}
+	}
+
+	olog.Print(osdata)
+}
+
+func getSysctlConfigSql(client *ssh.Client) {
 	cmd1 := `
 	sysctl -a | grep -E 'vm.swappiness|vm.dirty_background_ratio|vm.dirty_ratio|vm.dirty_expire_centisecs|vm.dirty_writeback_centisecs|vm.transparent_hugepages|vm.max_map_count|net.core.rmem_default|net.core.rmem_max|net.core.wmem_default|net.core.wmem_max|kernel.numa_balancing|kernel.sched_min_granularity_ns|kernel.sched_wakeup_granularity_ns' |awk ' {
 		print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}"

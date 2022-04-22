@@ -73,11 +73,28 @@ Ex9:- dso os rhel set -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1        //
 			}
 		}
 		if workload == "orcl" {
-			if tunedAdm {
-				fmt.Println("This action will change kernel parameters. Are you sure want to continue? (y/n): ")
-				fmt.Scanln(&usrCnf)
-				if strings.ToLower(usrCnf) == "y" {
-					setTunedAdmSettingsOrcl(c)
+			if attribute != "" {
+				att, val := parseAttribute(attribute)
+				if att == "hugepages" {
+					var cmd string
+					cmd = "sysctl -w vm.nr_hugepages="
+					if val == "" {
+						res := getHugepagesRecomendValue(c)
+						//fmt.Println(res)
+						cmd = cmd + res
+						setHugePages(c, cmd)
+					} else {
+						cmd = cmd + val
+						setHugePages(c, cmd)
+					}
+				}
+			} else {
+				if tunedAdm {
+					fmt.Println("This action will change kernel parameters. Are you sure want to continue? (y/n): ")
+					fmt.Scanln(&usrCnf)
+					if strings.ToLower(usrCnf) == "y" {
+						setTunedAdmSettingsOrcl(c)
+					}
 				}
 			}
 		}
@@ -122,6 +139,14 @@ func setAttrSetting(client *ssh.Client, attr, val string) error {
 
 	fmt.Println(cmnd)
 	_, err := util.ExecCmd(client, cmnd)
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+func setHugePages(client *ssh.Client, cmd string) error {
+	_, err := util.ExecCmd(client, cmd)
 	if err != nil {
 		panic(err)
 	}
@@ -323,4 +348,54 @@ func setMsConfigSettings(client *ssh.Client) {
 	//	panic(err)
 	//}
 	fmt.Println("mssql-conf changes applied successfully... ")
+}
+
+func getHugepagesRecomendValue(client *ssh.Client) string {
+	var err error
+	hugepagesCmd := `
+cat > /tmp/hugepagesRecomend.sh << "EOF"
+#!/bin/bash
+KERN=$(uname -r | awk -F. '{ printf("%d.%d\n",$1,$2); }')
+HPG_SZ=$(grep Hugepagesize /proc/meminfo | awk {'print $2'})
+NUM_PG=1
+for SEG_BYTES in $(ipcs -m | awk {'print $5'} | grep "[0-9][0-9]*")
+do
+MIN_PG=$(echo "$SEG_BYTES/($HPG_SZ*1024)" | bc -q)
+if [ $MIN_PG -gt 0 ]; then
+NUM_PG=$(echo "$NUM_PG+$MIN_PG+1" | bc -q)
+fi
+done
+case $KERN in
+'2.4') HUGETLB_POOL=$(echo "$NUM_PG*$HPG_SZ/1024" | bc -q);
+echo "vm.hugetlb_pool = $HUGETLB_POOL" ;;
+'2.6') echo "vm.nr_hugepages = $NUM_PG" ;;
+'3.'*) echo "vm.nr_hugepages = $NUM_PG" ;;
+'4.'*) echo "vm.nr_hugepages = $NUM_PG" ;;
+*) echo "Unrecognized kernel version $KERN. Exiting." ;;
+esac
+EOF
+`
+	_, err = execCmd(client, hugepagesCmd)
+	if err != nil {
+		panic(err)
+	}
+
+	cmd2 := `
+chmod +x /tmp/hugepagesRecomend.sh
+a=$(/tmp/hugepagesRecomend.sh | awk {'print $3'}) && echo $a
+`
+	res3, err := execCmd(client, cmd2)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println(res3.String())
+
+	cmd3 := `
+rm -f /tmp/hugepagesRecomend.sh 
+`
+	_, err = execCmd(client, cmd3)
+	if err != nil {
+		panic(err)
+	}
+	return res3.String()
 }

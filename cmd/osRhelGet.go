@@ -54,6 +54,11 @@ Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
 			if tunedAdm {
 				fmt.Println("Current Tuned-Adm Settings:")
 				getTunedAdmSettingsOrcl(c)
+			} else {
+				fmt.Println("Current Tuned-Adm Settings:")
+				getTunedAdmSettingsOrcl(c)
+				fmt.Println("Hugepage Settings:")
+				getHugePageDetails(c)
 			}
 		}
 
@@ -77,6 +82,38 @@ func init() {
 	//osRhelGetCmd.MarkFlagRequired("ip")
 	//osRhelGetCmd.MarkFlagRequired("user")
 	//osRhelGetCmd.MarkFlagRequired("pass")
+}
+
+type displaySettings struct {
+	Settings      string `json:"Settings"`
+	RunningValues string `json:"RunningValues"`
+	OptimalValues string `json:"OptimalValues"`
+	Diff          string `json:"Diff"`
+}
+
+func getHugePageDetails(client *ssh.Client) {
+	var settingSlice []displaySettings
+	cmd1 := "a=$(grep Hugepagesize /proc/meminfo | awk {'print $2'}) && echo $a"
+	res1, err := execCmd(client, cmd1)
+	if err != nil {
+		panic(err)
+	}
+	hugePageRecomendation := getHugepagesRecomendValue(client)
+	//setting := displaySettings{
+	//	Settings:      "vm.nr_hugepages",
+	//	RunningValues: res1.String(),
+	//	OptimalValues: hugePageRecomendation,
+	//}
+	var setting displaySettings
+	setting.Settings = "vm.nr_hugepages"
+	setting.RunningValues = strings.Trim(res1.String(),"\n")
+	setting.OptimalValues = strings.Trim(hugePageRecomendation, "\n")
+	if setting.RunningValues != setting.OptimalValues {
+		setting.Diff = "*"
+	}
+	settingSlice = append(settingSlice, setting)
+	//fmt.Println(setting)
+	olog.Print(settingSlice)
 }
 
 type tunedAdmSettings struct {
@@ -199,6 +236,7 @@ func getTunedAdmSettingsOrcl(client *ssh.Client) {
 		}
 	}
 	olog.Print(osdata)
+	//return osdata
 }
 
 func getTunedAdmSettingsSql(client *ssh.Client) {

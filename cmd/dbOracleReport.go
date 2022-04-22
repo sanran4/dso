@@ -46,6 +46,10 @@ var dbOrclRptCmd = &cobra.Command{
 		// select FILE_NAME, TABLESPACE_NAME, BYTES from dba_data_files;​
 		query1 := `
 		select FILE_NAME, TABLESPACE_NAME, BYTES from dba_data_files
+		UNION
+		select FILE_NAME, TABLESPACE_NAME, BYTES from dba_temp_files
+		UNION
+		select name AS FILE_NAME, 'CONTROL' AS TABLESPACE_NAME, (block_size * file_size_blks) AS BYTES from v$controlfile WHERE IS_RECOVERY_DEST_FILE = 'NO'
 		`
 		fmt.Println("Oracle database data files details")
 		getOrclDataFile(connString, query1)
@@ -57,6 +61,18 @@ var dbOrclRptCmd = &cobra.Command{
 		fmt.Println("Oracle database log files details")
 		//getOrclFileDetails(connString, query2)
 		getOrclLogFile(connString, query2)
+
+		query3 := `
+		select g.NAME, d.path,  d.total_mb FROM v$asm_disk d, v$asm_diskgroup g where g.GROUP_NUMBER = d.GROUP_NUMBER
+		`
+		fmt.Println("Oracle ASM disk details")
+		getOrclAsmDisks(connString, query3)
+
+		query4 := `
+		select NAME, DESCRIPTION, VALUE from v$parameter where name IN ('instance_type', 'instance_mode', 'compatible', 'compatible', 'service_names', 'db_name', 'processes', 'sessions', 'cpu_count', 'sga_min_size', 'sga_max_size', 'sga_target', 'db_block_size', 'memoptimize_pool_size', 'hash_area_size', 'result_cache_max_size', 'object_cache_optimal_size', 'sort_area_size', 'use_large_pages', 'log_buffer', 'background_dump_dest', 'user_dump_dest', 'core_dump_dest', 'audit_file_dest', 'optimizer_features_enable', 'parallel_degree_limit', 'enable_automatic_maintenance_pdb') ORDER BY NAME ASC
+		`
+		fmt.Println("Oracle database parameters detail")
+		getOrclDbParameters(connString, query4)
 
 	},
 }
@@ -169,6 +185,71 @@ func getOrclDataFile(connStr, query string) {
 		sodf = append(sodf, odf)
 		//fmt.Println("ID: ", Id, "\tName: ", vi.Name, "\tval: ", vi.Val, "\tDate: ", Date)
 		//fmt.Println(odf)
+	}
+	//fmt.Println(odf)
+	olog.Print(sodf)
+}
+
+type orclDbParameters struct {
+	ParameterName string `db:"name:NAME"`
+	Discription   string `db:"name:DESCRIPTION"`
+	CurrentValue  string `db:"name:VALUE"`
+}
+
+func getOrclDbParameters(connStr, query string) {
+	DB, err := go_ora.NewConnection(connStr)
+	dieOnError("Can't open the driver:", err)
+	err = DB.Open()
+	dieOnError("Can't open the connection:", err)
+	defer DB.Close()
+
+	stmt := go_ora.NewStmt(query, DB)
+	defer stmt.Close()
+
+	//rows, err := stmt.Query(nil)
+	rows, err := stmt.Query_(nil)
+	dieOnError("Can't query", err)
+	defer rows.Close()
+
+	var odf orclDbParameters
+	var sodf []orclDbParameters
+	for rows.Next_() {
+		err = rows.Scan(&odf)
+		dieOnError("Can't scan", err)
+		sodf = append(sodf, odf)
+		//fmt.Println("ID: ", Id, "\tName: ", vi.Name, "\tval: ", vi.Val, "\tDate: ", Date)
+		//fmt.Println(odf)
+	}
+	//fmt.Println(odf)
+	olog.Print(sodf)
+}
+
+type orclAsmDisks struct {
+	AsmGroupName string `db:"name:NAME"`
+	AsmDiskPath  string `db:"name:PATH"`
+	SizeInMB     string `db:"name:Total_MB"`
+}
+
+func getOrclAsmDisks(connStr, query string) {
+	DB, err := go_ora.NewConnection(connStr)
+	dieOnError("Can't open the driver:", err)
+	err = DB.Open()
+	dieOnError("Can't open the connection:", err)
+	defer DB.Close()
+
+	stmt := go_ora.NewStmt(query, DB)
+	defer stmt.Close()
+
+	rows, err := stmt.Query_(nil)
+	dieOnError("Can't query", err)
+	defer rows.Close()
+
+	var odf orclAsmDisks
+	var sodf []orclAsmDisks
+	for rows.Next_() {
+		err = rows.Scan(&odf)
+		dieOnError("Can't scan", err)
+		sodf = append(sodf, odf)
 	}
 	//fmt.Println(odf)
 	olog.Print(sodf)

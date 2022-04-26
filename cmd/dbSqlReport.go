@@ -70,6 +70,22 @@ EX3: dso db sql report --server=10.0.0.1 --user=user1 --pass=pass1
 		fmt.Println("SQL Server Property:")
 		getServerConfig(connString, query2)
 
+		var queryResource string = `
+		select setting,currentValue from (
+		SELECT convert(varchar(50),CONVERT(varchar,sqlserver_start_time,20))sqlserver_start_time,convert(varchar(50),socket_count)socket_count,convert(varchar(50),cores_per_socket)cores_per_socket,
+		convert(varchar(50),cpu_count)cpu_count, convert(varchar(50),softnuma_configuration_desc)softnuma_configuration_desc, convert(varchar(50),numa_node_count)numa_node_count, 
+		convert(varchar(50),scheduler_total_count)scheduler_total_count, convert(varchar(50),scheduler_count)scheduler_count, convert(varchar(50),affinity_type_desc)affinity_type_desc,
+		convert(varchar(50),process_physical_affinity)process_physical_affinity,convert(varchar(50),(physical_memory_kb/(1024*1024)))physical_memory_gb,convert(varchar(50),max_workers_count)max_workers_count   
+		FROM sys.dm_os_sys_info
+		) as t1
+		UNPIVOT(currentValue FOR setting IN (
+		sqlserver_start_time, socket_count, cores_per_socket, cpu_count,softnuma_configuration_desc,numa_node_count, scheduler_total_count,scheduler_count,affinity_type_desc,process_physical_affinity,
+		physical_memory_gb,max_workers_count)
+		) AS unp
+		`
+		fmt.Println("SQL Server Resource:")
+		getDbSettingConfig(connString, queryResource)
+
 		var query3 string = `
 		SELECT convert(varchar(100),name) ConfigName, convert(varchar(100),value) ConfigValue, 
 		convert(varchar(100),value_in_use) ConfigValueInUse, convert(varchar(512),description) ConfigDescription
@@ -134,6 +150,46 @@ func init() {
 	//dbSqlReportCmd.MarkFlagRequired("server")
 	//dbSqlReportCmd.MarkFlagRequired("user")
 	//dbSqlReportCmd.MarkFlagRequired("pass")
+}
+
+type displySetting struct {
+	ConfigName  string `json:"ConfigName"`
+	ConfigValue string `json:"ConfigValue"`
+}
+
+func getDbSettingConfig(connStr, query string) {
+	conn, err := sql.Open("mssql", connStr)
+	if err != nil {
+		log.Fatal("Open connection failed:", err.Error())
+	}
+	defer conn.Close()
+
+	stmt, err := conn.Prepare(query)
+	if err != nil {
+		log.Fatal("Prepare failed:", err.Error())
+	}
+	defer stmt.Close()
+	totalRows, err := stmt.Query()
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	defer totalRows.Close()
+	mc1 := []displySetting{}
+	for totalRows.Next() {
+		c1 := displySetting{}
+		err = totalRows.Scan(&c1.ConfigName, &c1.ConfigValue)
+		if err != nil {
+			panic(err)
+		}
+
+		mc1 = append(mc1, c1)
+	}
+	err = totalRows.Err()
+	if err != nil {
+		panic(err)
+	}
+	olog.Print(mc1)
 }
 
 type instanceConfig struct {

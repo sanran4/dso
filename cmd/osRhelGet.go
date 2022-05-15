@@ -106,7 +106,7 @@ func getHugePageDetails(client *ssh.Client) {
 	//}
 	var setting displaySettings
 	setting.Settings = "vm.nr_hugepages"
-	setting.RunningValues = strings.Trim(res1.String(),"\n")
+	setting.RunningValues = strings.Trim(res1.String(), "\n")
 	setting.OptimalValues = strings.Trim(hugePageRecomendation, "\n")
 	if setting.RunningValues != setting.OptimalValues {
 		setting.Diff = "*"

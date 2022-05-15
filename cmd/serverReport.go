@@ -7,6 +7,7 @@ package cmd
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	"github.com/da0x/golang/olog"
+	"github.com/jszwec/csvutil"
 	"github.com/sanran4/dso/util"
 
 	"github.com/spf13/cobra"
@@ -33,7 +35,22 @@ EX1: dso server report -I 10.0.0.1 -U user1 -P pass1
 EX3: dso server report --idracIP=10.0.0.1 --user=user1 --pass=pass1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		ShowBios(cmd, args)
+		outFormat, _ := cmd.Flags().GetString("out")
+		output := ShowBios(cmd, args)
+		if outFormat == "table" {
+			olog.Print(output)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(output))
+		} else if outFormat == "csv" {
+			outputFile := util.GetFilenameDate("serverReport", "csv")
+			//var atts []AttrConv
+			b, err := csvutil.Marshal(output)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			fmt.Println(string(b))
+			util.WriteCsvReport(outputFile, string(b))
+		}
 	},
 }
 
@@ -45,6 +62,7 @@ func init() {
 	serverReportCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
 	serverReportCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
 	serverReportCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
+	serverReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
@@ -59,32 +77,32 @@ type AttrConv struct {
 }
 
 type Attribute struct {
-	SystemModelName     string `json:"SystemModelName"`
-	SystemBiosVersion   string `json:"SystemBiosVersion"`
-	SystemServiceTag    string `json:"SystemServiceTag"`
-	SystemManufacturer  string `json:"SystemManufacturer"`
-	SysMfrContactInfo   string `json:"SysMfrContactInfo"`
-	SystemCpldVersion   string `json:"SystemCpldVersion"`
-	SysMemSize          string `json:"SysMemSize"`
-	SysMemType          string `json:"SysMemType"`
-	SysMemSpeed         string `json:"SysMemSpeed"`
-	MemOpMode           string `json:"MemOpMode"`
-	ProcBrand           string `json:"Proc1Brand"`
-	ProcCoreSpeed       string `json:"ProcCoreSpeed"`
-	ProcNumCores        int    `json:"Proc1NumCores"`
-	ProcBusSpeed        string `json:"ProcBusSpeed"`
-	LogicalProc         string `json:"LogicalProc"`
-	ProcVirtualization  string `json:"ProcVirtualization"`
-	ProcX2Apic          string `json:"ProcX2Apic"`
-	ControlledTurbo     string `json:"ControlledTurbo"`
-	NvmeMode            string `json:"NvmeMode"`
-	BootMode            string `json:"BootMode"`
-	SysProfile          string `json:"SysProfile"`
-	WorkloadProfile     string `json:"WorkloadProfile"`
-	SecureBoot          string `json:"SecureBoot"`
-	SerialCommunication string `json:"SerialComm"`
-	UsbPorts            string `json:"UsbPorts"`
-	UsbManagedPort      string `json:"UsbManagedPort"`
+	SystemModelName     string `json:"SystemModelName" csv:"SystemModelName"`
+	SystemBiosVersion   string `json:"SystemBiosVersion" csv:"SystemBiosVersion"`
+	SystemServiceTag    string `json:"SystemServiceTag" csv:"SystemServiceTag"`
+	SystemManufacturer  string `json:"SystemManufacturer" csv:"SystemManufacturer"`
+	SysMfrContactInfo   string `json:"SysMfrContactInfo" csv:"SysMfrContactInfo"`
+	SystemCpldVersion   string `json:"SystemCpldVersion" csv:"SystemCpldVersion"`
+	SysMemSize          string `json:"SysMemSize" csv:"SysMemSize"`
+	SysMemType          string `json:"SysMemType" csv:"SysMemType"`
+	SysMemSpeed         string `json:"SysMemSpeed" csv:"SysMemSpeed"`
+	MemOpMode           string `json:"MemOpMode" csv:"MemOpMode"`
+	ProcBrand           string `json:"Proc1Brand" csv:"Proc1Brand"`
+	ProcCoreSpeed       string `json:"ProcCoreSpeed" csv:"ProcCoreSpeed"`
+	ProcNumCores        int    `json:"Proc1NumCores" csv:"Proc1NumCores"`
+	ProcBusSpeed        string `json:"ProcBusSpeed" csv:"ProcBusSpeed"`
+	LogicalProc         string `json:"LogicalProc" csv:"LogicalProc"`
+	ProcVirtualization  string `json:"ProcVirtualization" csv:"ProcVirtualization"`
+	ProcX2Apic          string `json:"ProcX2Apic" csv:"ProcX2Apic"`
+	ControlledTurbo     string `json:"ControlledTurbo" csv:"ControlledTurbo"`
+	NvmeMode            string `json:"NvmeMode" csv:"NvmeMode"`
+	BootMode            string `json:"BootMode" csv:"BootMode"`
+	SysProfile          string `json:"SysProfile" csv:"SysProfile"`
+	WorkloadProfile     string `json:"WorkloadProfile" csv:"WorkloadProfile"`
+	SecureBoot          string `json:"SecureBoot" csv:"SecureBoot"`
+	SerialCommunication string `json:"SerialComm" csv:"SerialComm"`
+	UsbPorts            string `json:"UsbPorts" csv:"UsbPorts"`
+	UsbManagedPort      string `json:"UsbManagedPort" csv:"UsbManagedPort"`
 }
 
 type BiosConfig struct {
@@ -187,7 +205,7 @@ func PrettyPrint(i interface{}) string {
 	return string(s)
 }
 
-func ShowBios(cmd *cobra.Command, args []string) {
+func ShowBios(cmd *cobra.Command, args []string) []AttrConv {
 
 	//var attr []Attribute
 	uri, usr, pas := createURL(cmd, args)
@@ -221,5 +239,6 @@ func ShowBios(cmd *cobra.Command, args []string) {
 		//fmt.Print("Type:", field.Type, ",", field.Name, "=", value, "\n")
 		test1 = append(test1, test2)
 	}
-	olog.Print(test1)
+	//olog.Print(test1)
+	return test1
 }

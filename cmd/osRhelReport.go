@@ -3,11 +3,13 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/da0x/golang/olog"
+	"github.com/jszwec/csvutil"
 	"github.com/sanran4/dso/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
@@ -28,12 +30,53 @@ Ex3: dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1
 			panic(err)
 		}
 		defer client.Close()
+		outFormat, _ := cmd.Flags().GetString("out")
 		if workload == "sql" {
-			getSysctlConfigSql(client)
-			getMssqlConfSettings(client)
+			output1 := getSysctlConfigSql(client)
+			output2 := getMssqlConfSettingsReport(client)
+			if outFormat == "table" {
+				fmt.Println("OS kernal settings")
+				olog.Print(output1)
+				fmt.Println("SQL Server config settings")
+				olog.Print(output2)
+			} else if outFormat == "json" {
+				fmt.Println("OS kernal settings")
+				fmt.Println(util.PrettyPrint(output1))
+				fmt.Println("SQL Server config settings")
+				fmt.Println(util.PrettyPrint(output2))
+			} else if outFormat == "csv" {
+				outputFile1 := util.GetFilenameDate("osKernalSettingReport", "csv")
+				b1, err := csvutil.Marshal(output1)
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+				util.WriteCsvReport(outputFile1, string(b1))
+				outputFile2 := util.GetFilenameDate("sqlServerConfigReport", "csv")
+				b2, err := csvutil.Marshal(output2)
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+				util.WriteCsvReport(outputFile2, string(b2))
+			}
+
 		}
 		if workload == "orcl" {
-			getSysctlConfigOrcl(client)
+			output1 := getSysctlConfigOrcl(client)
+			if outFormat == "table" {
+				fmt.Println("OS kernal settings")
+				olog.Print(output1)
+			} else if outFormat == "json" {
+				fmt.Println("OS kernal settings")
+				fmt.Println(util.PrettyPrint(output1))
+			} else if outFormat == "csv" {
+				outputFile := util.GetFilenameDate("osKernalSettingReport", "csv")
+				b, err := csvutil.Marshal(output1)
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+				fmt.Println(string(b))
+				util.WriteCsvReport(outputFile, string(b))
+			}
 		}
 
 	},
@@ -49,6 +92,7 @@ func init() {
 	osRhelReportCmd.Flags().StringP("user", "U", "", "Username for the RHEL operating system")
 	osRhelReportCmd.Flags().StringP("pass", "P", "", "Password for the RHEL operating system")
 	osRhelReportCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
+	osRhelReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
 	//osRhelReportCmd.MarkFlagRequired("ip")
@@ -121,7 +165,7 @@ type OsSetting struct {
 	RunningValues string `json:"RunningValues"`
 }
 
-func getSysctlConfigOrcl(client *ssh.Client) {
+func getSysctlConfigOrcl(client *ssh.Client) []OsSetting {
 	cmd1 := `
 	sysctl vm.swappiness vm.dirty_background_ratio vm.dirty_ratio vm.dirty_expire_centisecs vm.dirty_writeback_centisecs kernel.shmmax kernel.shmall kernel.shmmni fs.file-max fs.aio-max-nr net.core.rmem_default net.core.rmem_max net.core.wmem_default net.core.wmem_max kernel.panic_on_oops kernel.numa_balancing | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}" }' && sysctl net.ipv4.ip_local_port_range | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3" "$4 "\"}" }' && sysctl kernel.sem | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3" "$4" "$5" "$6 "\"}" }'
 	`
@@ -139,10 +183,11 @@ func getSysctlConfigOrcl(client *ssh.Client) {
 		}
 	}
 
-	olog.Print(osdata)
+	//olog.Print(osdata)
+	return osdata
 }
 
-func getSysctlConfigSql(client *ssh.Client) {
+func getSysctlConfigSql(client *ssh.Client) []OsSetting {
 	cmd1 := `
 	sysctl -a | grep -E 'vm.swappiness|vm.dirty_background_ratio|vm.dirty_ratio|vm.dirty_expire_centisecs|vm.dirty_writeback_centisecs|vm.transparent_hugepages|vm.max_map_count|net.core.rmem_default|net.core.rmem_max|net.core.wmem_default|net.core.wmem_max|kernel.numa_balancing|kernel.sched_min_granularity_ns|kernel.sched_wakeup_granularity_ns' |awk ' {
 		print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}"
@@ -163,5 +208,46 @@ func getSysctlConfigSql(client *ssh.Client) {
 		}
 	}
 
-	olog.Print(osdata)
+	//olog.Print(osdata)
+	return osdata
+}
+
+func getMssqlConfSettingsReport(client *ssh.Client) []mssqlConfSettings {
+	cmd1 := `
+{ if echo "$(/opt/mssql/bin/mssql-conf get EULA)" | grep -q "No"; 
+then echo "accepteula : NotSet"; 
+else echo "$(/opt/mssql/bin/mssql-conf get EULA)"; 
+fi;
+if echo "$(/opt/mssql/bin/mssql-conf get control)" | grep -q "No"; 
+then echo "control : NotSet"; 
+else echo "$(/opt/mssql/bin/mssql-conf get control)"; 
+fi;
+if echo "$(/opt/mssql/bin/mssql-conf get memory)" | grep -q "No"; 
+then echo "memory : NotSet"; 
+else echo "$(/opt/mssql/bin/mssql-conf get memory)"; 
+fi; 
+if echo "$(/opt/mssql/bin/mssql-conf get traceflag)" | grep -q "No"; 
+then echo "traceflag : NotSet"; 
+else echo "$(/opt/mssql/bin/mssql-conf get traceflag)"; 
+fi; } | awk ' {
+print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}"
+}'
+	`
+
+	res, err := util.ExecCmd(client, cmd1)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println(res.String())
+	var osdata []mssqlConfSettings
+	for _, m := range strings.Split(res.String(), "\n") {
+		var osd mssqlConfSettings
+		if m != "" {
+			json.Unmarshal([]byte(m), &osd)
+			osdata = append(osdata, osd)
+		}
+	}
+
+	//olog.Print(osdata)
+	return osdata
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -122,4 +123,32 @@ func GetFilenameDate(fName, extn string) string {
 	// Place now in the string.
 	t := time.Now()
 	return fName + "-" + t.Format(layout) + "." + extn
+}
+
+func WriteCsvReport(filename, data string) {
+	var err error
+	_, err = os.Stat(filename)
+	if os.IsNotExist(err) {
+		var createFile, err = os.Create(filename)
+		if err != nil {
+			fmt.Println("error:", err)
+		}
+		defer createFile.Close()
+	}
+	file, err := os.OpenFile(filename, os.O_RDWR, 0644)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	defer file.Close()
+	_, err = file.WriteString(data)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	// Save file changes.
+	err = file.Sync()
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+
+	fmt.Println("Report Written Successfully.")
 }

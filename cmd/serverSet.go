@@ -234,10 +234,6 @@ type srvJobStatus struct {
 	Message  string `json:"Message"`
 }
 
-func (s srvJobStatus) getJobStaus() string {
-	return s.JobState
-}
-
 // Function to Reboot Server through iDRAC
 func srvLoopJobStatus(idracIP, user, pass, jobId string) {
 

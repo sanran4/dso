@@ -23,6 +23,7 @@ var serverRebootCmd = &cobra.Command{
 EX1: dso server reboot -I 10.0.0.1 -U user1 -P pass1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		initSrvReboot(cmd, args)
 	},
 }
 

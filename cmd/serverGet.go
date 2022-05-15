@@ -69,6 +69,9 @@ type BiosAttribute struct {
 	ProcX2Apic         string `json:"ProcX2Apic"`
 	SysProfile         string `json:"SysProfile"`
 	WorkloadProfile    string `json:"WorkloadProfile"`
+	SerialComm         string `json:"SerialComm"`
+	UsbPorts           string `json:"UsbPorts"`
+	UsbManagedPort     string `json:"UsbManagedPort"`
 }
 type srvGetBiosConfig struct {
 	Name       string        `json:"name"`
@@ -157,6 +160,12 @@ func srvGetBiosData(baseURL, user, pass string) {
 			l_sgbs.OptimalValues = "PerfOptimized"
 		case "WorkloadProfile":
 			l_sgbs.OptimalValues = "DbOptimizedProfile"
+		case "SerialComm":
+			l_sgbs.OptimalValues = "Off"
+		case "UsbPorts":
+			l_sgbs.OptimalValues = "AllOff"
+		case "UsbManagedPort":
+			l_sgbs.OptimalValues = "Off"
 		}
 		//fmt.Print("Type:", field.Type, ",", field.Name, "=", value, "\n")
 		sgbs = append(sgbs, l_sgbs)

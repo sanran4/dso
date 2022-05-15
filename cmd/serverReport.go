@@ -59,30 +59,32 @@ type AttrConv struct {
 }
 
 type Attribute struct {
-	SystemModelName    string `json:"SystemModelName"`
-	SystemBiosVersion  string `json:"SystemBiosVersion"`
-	SystemMeVersion    string `json:"SystemMeVersion"`
-	SystemServiceTag   string `json:"SystemServiceTag"`
-	SystemManufacturer string `json:"SystemManufacturer"`
-	SysMfrContactInfo  string `json:"SysMfrContactInfo"`
-	SystemCpldVersion  string `json:"SystemCpldVersion"`
-	SysMemSize         string `json:"SysMemSize"`
-	SysMemType         string `json:"SysMemType"`
-	SysMemSpeed        string `json:"SysMemSpeed"`
-	MemOpMode          string `json:"MemOpMode"`
-	ProcBrand          string `json:"Proc1Brand"`
-	ProcCoreSpeed      string `json:"ProcCoreSpeed"`
-	ProcNumCores       int    `json:"Proc1NumCores"`
-	ProcBusSpeed       string `json:"ProcBusSpeed"`
-	LogicalProc        string `json:"LogicalProc"`
-	ProcVirtualization string `json:"ProcVirtualization"`
-	ProcX2Apic         string `json:"ProcX2Apic"`
-	ControlledTurbo    string `json:"ControlledTurbo"`
-	NvmeMode           string `json:"NvmeMode"`
-	BootMode           string `json:"BootMode"`
-	SysProfile         string `json:"SysProfile"`
-	WorkloadProfile    string `json:"WorkloadProfile"`
-	SecureBoot         string `json:"SecureBoot"`
+	SystemModelName     string `json:"SystemModelName"`
+	SystemBiosVersion   string `json:"SystemBiosVersion"`
+	SystemServiceTag    string `json:"SystemServiceTag"`
+	SystemManufacturer  string `json:"SystemManufacturer"`
+	SysMfrContactInfo   string `json:"SysMfrContactInfo"`
+	SystemCpldVersion   string `json:"SystemCpldVersion"`
+	SysMemSize          string `json:"SysMemSize"`
+	SysMemType          string `json:"SysMemType"`
+	SysMemSpeed         string `json:"SysMemSpeed"`
+	MemOpMode           string `json:"MemOpMode"`
+	ProcBrand           string `json:"Proc1Brand"`
+	ProcCoreSpeed       string `json:"ProcCoreSpeed"`
+	ProcNumCores        int    `json:"Proc1NumCores"`
+	ProcBusSpeed        string `json:"ProcBusSpeed"`
+	LogicalProc         string `json:"LogicalProc"`
+	ProcVirtualization  string `json:"ProcVirtualization"`
+	ProcX2Apic          string `json:"ProcX2Apic"`
+	ControlledTurbo     string `json:"ControlledTurbo"`
+	NvmeMode            string `json:"NvmeMode"`
+	BootMode            string `json:"BootMode"`
+	SysProfile          string `json:"SysProfile"`
+	WorkloadProfile     string `json:"WorkloadProfile"`
+	SecureBoot          string `json:"SecureBoot"`
+	SerialCommunication string `json:"SerialComm"`
+	UsbPorts            string `json:"UsbPorts"`
+	UsbManagedPort      string `json:"UsbManagedPort"`
 }
 
 type BiosConfig struct {

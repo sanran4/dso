@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -113,4 +114,12 @@ func GetPasswd() (string, error) {
 	fmt.Println()
 	password := string(bytePassword)
 	return strings.TrimSpace(password), nil
+}
+
+func GetFilenameDate(fName, extn string) string {
+	// Use layout string for time format.
+	const layout = "20060102150405"
+	// Place now in the string.
+	t := time.Now()
+	return fName + "-" + t.Format(layout) + "." + extn
 }

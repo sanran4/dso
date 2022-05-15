@@ -37,13 +37,26 @@ var dbOrclRptCmd = &cobra.Command{
 			}
 		*/
 
-		srv, usr, pas, svc, prt := parseDbOrclRptFlags(cmd, args)
+		srv, usr, pas, svc, prt, rptType, outType := parseDbOrclRptFlags(cmd, args)
 
 		// oracle://user:pass@server/service_name
 		connString := fmt.Sprintf("oracle://%s:%s@%s:%d/%s", usr, pas, srv, prt, svc)
 		//fmt.Println(connString)
 
 		// select FILE_NAME, TABLESPACE_NAME, BYTES from dba_data_files;​
+		if rptType == "" || rptType == "dbfile" {
+			q1 := `
+			select FILE_NAME, TABLESPACE_NAME, BYTES from dba_data_files
+			`
+			fmt.Println("Oracle database data files details")
+			out := getOrclDataFile(connString, q1)
+			if outType == "table" {
+				olog.Print(out)
+			} else if outType == "pdf" {
+				CreatePDF("Oracle database data files details", out)
+			}
+		}
+
 		query1 := `
 		select FILE_NAME, TABLESPACE_NAME, BYTES from dba_data_files
 		UNION
@@ -85,13 +98,15 @@ func init() {
 	dbOrclRptCmd.Flags().StringP("server", "S", "", "oracle db server name/IP address")
 	dbOrclRptCmd.Flags().Int("port", 1521, "oracle db port")
 	dbOrclRptCmd.Flags().String("svc", "", "oracle service name")
+	dbOrclRptCmd.Flags().StringP("type", "t", "", "Report type to be fetched")
+	dbOrclRptCmd.Flags().StringP("output", "o", "table", "Output report data in table/pdf format")
 
 	//dbOrclRptCmd.MarkFlagRequired("server")
 	//dbOrclRptCmd.MarkFlagRequired("user")
 	dbOrclRptCmd.MarkFlagRequired("svc")
 }
 
-func parseDbOrclRptFlags(cmd *cobra.Command, args []string) (srv, usr, pas, svc string, prt int) {
+func parseDbOrclRptFlags(cmd *cobra.Command, args []string) (srv, usr, pas, svc string, prt int, rptTyp, outTyp string) {
 	server, ok := os.LookupEnv("ORCL_DB_HOST")
 	if !ok {
 		server, _ = cmd.Flags().GetString("server")
@@ -112,8 +127,10 @@ func parseDbOrclRptFlags(cmd *cobra.Command, args []string) (srv, usr, pas, svc 
 
 	oraSvc, _ := cmd.Flags().GetString("svc")
 	port, _ := cmd.Flags().GetInt("port")
+	reportType, _ := cmd.Flags().GetString("type")
+	outputType, _ := cmd.Flags().GetString("output")
 
-	return server, user, pass, oraSvc, port
+	return server, user, pass, oraSvc, port, reportType, outputType
 }
 
 func dieOnError(msg string, err error) {
@@ -162,7 +179,7 @@ func getOrclLogFile(connStr, query string) {
 	olog.Print(solf)
 }
 
-func getOrclDataFile(connStr, query string) {
+func getOrclDataFile(connStr, query string) []orclDataFile {
 	DB, err := go_ora.NewConnection(connStr)
 	dieOnError("Can't open the driver:", err)
 	err = DB.Open()
@@ -187,7 +204,8 @@ func getOrclDataFile(connStr, query string) {
 		//fmt.Println(odf)
 	}
 	//fmt.Println(odf)
-	olog.Print(sodf)
+	//olog.Print(sodf)
+	return sodf
 }
 
 type orclDbParameters struct {
@@ -253,6 +271,10 @@ func getOrclAsmDisks(connStr, query string) {
 	}
 	//fmt.Println(odf)
 	olog.Print(sodf)
+}
+
+func CreatePDF(reportHeading string, reportData []orclDataFile) {
+
 }
 
 /*

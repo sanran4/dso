@@ -154,9 +154,9 @@ func srvGetBiosData(baseURL, user, pass string) {
 		case "ProcX2Apic":
 			l_sgbs.OptimalValues = "Enabled"
 		case "SysProfile":
-			l_sgbs.OptimalValues = "Performance"
+			l_sgbs.OptimalValues = "PerfOptimized"
 		case "WorkloadProfile":
-			l_sgbs.OptimalValues = "Database Optimized Performance Profile"
+			l_sgbs.OptimalValues = "DbOptimizedProfile"
 		}
 		//fmt.Print("Type:", field.Type, ",", field.Name, "=", value, "\n")
 		sgbs = append(sgbs, l_sgbs)

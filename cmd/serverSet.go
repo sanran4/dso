@@ -22,7 +22,8 @@ import (
 )
 
 var srvSetBios bool = false
-var srvSetJobId string
+
+//var srvSetJobId string
 
 // serverCmd represents the server command
 var serverSetCmd = &cobra.Command{

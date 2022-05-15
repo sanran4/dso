@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/da0x/golang/olog"
+	"github.com/jszwec/csvutil"
 	"github.com/sanran4/dso/util"
 	go_ora "github.com/sijms/go-ora/v2"
 	"github.com/spf13/cobra"
@@ -36,26 +37,12 @@ var dbOrclRptCmd = &cobra.Command{
 				}
 			}
 		*/
-
-		srv, usr, pas, svc, prt, rptType, outType := parseDbOrclRptFlags(cmd, args)
+		outFormat, _ := cmd.Flags().GetString("out")
+		srv, usr, pas, svc, prt := parseDbOrclRptFlags(cmd, args)
 
 		// oracle://user:pass@server/service_name
 		connString := fmt.Sprintf("oracle://%s:%s@%s:%d/%s", usr, pas, srv, prt, svc)
 		//fmt.Println(connString)
-
-		// select FILE_NAME, TABLESPACE_NAME, BYTES from dba_data_files;​
-		if rptType == "" || rptType == "dbfile" {
-			q1 := `
-			select FILE_NAME, TABLESPACE_NAME, BYTES from dba_data_files
-			`
-			fmt.Println("Oracle database data files details")
-			out := getOrclDataFile(connString, q1)
-			if outType == "table" {
-				olog.Print(out)
-			} else if outType == "pdf" {
-				CreatePDF("Oracle database data files details", out)
-			}
-		}
 
 		query1 := `
 		select FILE_NAME, TABLESPACE_NAME, BYTES from dba_data_files
@@ -65,7 +52,19 @@ var dbOrclRptCmd = &cobra.Command{
 		select name AS FILE_NAME, 'CONTROL' AS TABLESPACE_NAME, (block_size * file_size_blks) AS BYTES from v$controlfile WHERE IS_RECOVERY_DEST_FILE = 'NO'
 		`
 		fmt.Println("Oracle database data files details")
-		getOrclDataFile(connString, query1)
+		out1 := getOrclDataFile(connString, query1)
+		if outFormat == "table" {
+			olog.Print(out1)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(out1))
+		} else if outFormat == "csv" {
+			of1 := util.GetFilenameDate("oracleFilesReport", "csv")
+			b1, err := csvutil.Marshal(out1)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(of1, string(b1))
+		}
 
 		// select l.GROUP#, l.THREAD#, f.MEMBER, l.BYTES from v\$logfile f, v\$log l where f.group#=l.group#
 		query2 := `
@@ -73,19 +72,55 @@ var dbOrclRptCmd = &cobra.Command{
 		`
 		fmt.Println("Oracle database log files details")
 		//getOrclFileDetails(connString, query2)
-		getOrclLogFile(connString, query2)
+		out2 := getOrclLogFile(connString, query2)
+		if outFormat == "table" {
+			olog.Print(out2)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(out2))
+		} else if outFormat == "csv" {
+			of2 := util.GetFilenameDate("oracleLogFilesReport", "csv")
+			b2, err := csvutil.Marshal(out2)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(of2, string(b2))
+		}
 
 		query3 := `
 		select g.NAME, d.path,  d.total_mb FROM v$asm_disk d, v$asm_diskgroup g where g.GROUP_NUMBER = d.GROUP_NUMBER
 		`
 		fmt.Println("Oracle ASM disk details")
-		getOrclAsmDisks(connString, query3)
+		out3 := getOrclAsmDisks(connString, query3)
+		if outFormat == "table" {
+			olog.Print(out3)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(out3))
+		} else if outFormat == "csv" {
+			of3 := util.GetFilenameDate("oracleLAsmDiskReport", "csv")
+			b3, err := csvutil.Marshal(out3)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(of3, string(b3))
+		}
 
 		query4 := `
 		select NAME, DESCRIPTION, VALUE from v$parameter where name IN ('instance_type', 'instance_mode', 'compatible', 'compatible', 'service_names', 'db_name', 'processes', 'sessions', 'cpu_count', 'sga_min_size', 'sga_max_size', 'sga_target', 'db_block_size', 'memoptimize_pool_size', 'hash_area_size', 'result_cache_max_size', 'object_cache_optimal_size', 'sort_area_size', 'use_large_pages', 'log_buffer', 'background_dump_dest', 'user_dump_dest', 'core_dump_dest', 'audit_file_dest', 'optimizer_features_enable', 'parallel_degree_limit', 'enable_automatic_maintenance_pdb') ORDER BY NAME ASC
 		`
 		fmt.Println("Oracle database parameters detail")
-		getOrclDbParameters(connString, query4)
+		out4 := getOrclDbParameters(connString, query4)
+		if outFormat == "table" {
+			olog.Print(out4)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(out4))
+		} else if outFormat == "csv" {
+			of4 := util.GetFilenameDate("oracleDbParameterReport", "csv")
+			b4, err := csvutil.Marshal(out4)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(of4, string(b4))
+		}
 
 	},
 }
@@ -98,15 +133,15 @@ func init() {
 	dbOrclRptCmd.Flags().StringP("server", "S", "", "oracle db server name/IP address")
 	dbOrclRptCmd.Flags().Int("port", 1521, "oracle db port")
 	dbOrclRptCmd.Flags().String("svc", "", "oracle service name")
-	dbOrclRptCmd.Flags().StringP("type", "t", "", "Report type to be fetched")
-	dbOrclRptCmd.Flags().StringP("output", "o", "table", "Output report data in table/pdf format")
+	//dbOrclRptCmd.Flags().StringP("type", "t", "", "Report type to be fetched")
+	dbOrclRptCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//dbOrclRptCmd.MarkFlagRequired("server")
 	//dbOrclRptCmd.MarkFlagRequired("user")
 	dbOrclRptCmd.MarkFlagRequired("svc")
 }
 
-func parseDbOrclRptFlags(cmd *cobra.Command, args []string) (srv, usr, pas, svc string, prt int, rptTyp, outTyp string) {
+func parseDbOrclRptFlags(cmd *cobra.Command, args []string) (srv, usr, pas, svc string, prt int) {
 	server, ok := os.LookupEnv("ORCL_DB_HOST")
 	if !ok {
 		server, _ = cmd.Flags().GetString("server")
@@ -127,10 +162,10 @@ func parseDbOrclRptFlags(cmd *cobra.Command, args []string) (srv, usr, pas, svc 
 
 	oraSvc, _ := cmd.Flags().GetString("svc")
 	port, _ := cmd.Flags().GetInt("port")
-	reportType, _ := cmd.Flags().GetString("type")
-	outputType, _ := cmd.Flags().GetString("output")
+	//reportType, _ := cmd.Flags().GetString("type")
+	//outputType, _ := cmd.Flags().GetString("output")
 
-	return server, user, pass, oraSvc, port, reportType, outputType
+	return server, user, pass, oraSvc, port
 }
 
 func dieOnError(msg string, err error) {
@@ -154,7 +189,7 @@ type orclLogFile struct {
 	SizeInBytes string `db:"name:BYTES"`
 }
 
-func getOrclLogFile(connStr, query string) {
+func getOrclLogFile(connStr, query string) []orclLogFile {
 	DB, err := go_ora.NewConnection(connStr)
 	dieOnError("Can't open the driver:", err)
 	err = DB.Open()
@@ -176,7 +211,8 @@ func getOrclLogFile(connStr, query string) {
 		dieOnError("Can't scan", err)
 		solf = append(solf, olf)
 	}
-	olog.Print(solf)
+	//olog.Print(solf)
+	return solf
 }
 
 func getOrclDataFile(connStr, query string) []orclDataFile {
@@ -214,7 +250,7 @@ type orclDbParameters struct {
 	CurrentValue  string `db:"name:VALUE"`
 }
 
-func getOrclDbParameters(connStr, query string) {
+func getOrclDbParameters(connStr, query string) []orclDbParameters {
 	DB, err := go_ora.NewConnection(connStr)
 	dieOnError("Can't open the driver:", err)
 	err = DB.Open()
@@ -239,7 +275,8 @@ func getOrclDbParameters(connStr, query string) {
 		//fmt.Println(odf)
 	}
 	//fmt.Println(odf)
-	olog.Print(sodf)
+	//olog.Print(sodf)
+	return sodf
 }
 
 type orclAsmDisks struct {
@@ -248,7 +285,7 @@ type orclAsmDisks struct {
 	SizeInMB     string `db:"name:Total_MB"`
 }
 
-func getOrclAsmDisks(connStr, query string) {
+func getOrclAsmDisks(connStr, query string) []orclAsmDisks {
 	DB, err := go_ora.NewConnection(connStr)
 	dieOnError("Can't open the driver:", err)
 	err = DB.Open()
@@ -270,7 +307,8 @@ func getOrclAsmDisks(connStr, query string) {
 		sodf = append(sodf, odf)
 	}
 	//fmt.Println(odf)
-	olog.Print(sodf)
+	//olog.Print(sodf)
+	return sodf
 }
 
 func CreatePDF(reportHeading string, reportData []orclDataFile) {

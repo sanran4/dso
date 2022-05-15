@@ -8,6 +8,7 @@ import (
 
 	"github.com/da0x/golang/olog"
 	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/jszwec/csvutil"
 	"github.com/sanran4/dso/util"
 	"github.com/spf13/cobra"
 )
@@ -45,9 +46,11 @@ EX3: dso db sql report --server=10.0.0.1 --user=user1 --pass=pass1
 			}
 		}
 
+		outFormat, _ := cmd.Flags().GetString("out")
+
 		connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", server, user, pass, port)
 
-		var query2 string = `
+		var querySqlServerProperty string = `
 		select srvSetting, srvData from (
 			SELECT  
 			  SERVERPROPERTY('MachineName') AS ComputerName,
@@ -68,7 +71,19 @@ EX3: dso db sql report --server=10.0.0.1 --user=user1 --pass=pass1
 				) AS unp
 		`
 		fmt.Println("SQL Server Property:")
-		getServerConfig(connString, query2)
+		output1 := getServerConfig(connString, querySqlServerProperty)
+		if outFormat == "table" {
+			olog.Print(output1)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(output1))
+		} else if outFormat == "csv" {
+			outputFile1 := util.GetFilenameDate("SqlServerPropertyReport", "csv")
+			b1, err := csvutil.Marshal(output1)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(outputFile1, string(b1))
+		}
 
 		var queryResource string = `
 		select setting,currentValue from (
@@ -84,7 +99,19 @@ EX3: dso db sql report --server=10.0.0.1 --user=user1 --pass=pass1
 		) AS unp
 		`
 		fmt.Println("SQL Server Resource:")
-		getDbSettingConfig(connString, queryResource)
+		out2 := getDbSettingConfig(connString, queryResource)
+		if outFormat == "table" {
+			olog.Print(out2)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(out2))
+		} else if outFormat == "csv" {
+			outputFile1 := util.GetFilenameDate("SqlServerResourceReport", "csv")
+			b2, err := csvutil.Marshal(out2)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(outputFile1, string(b2))
+		}
 
 		var query3 string = `
 		SELECT convert(varchar(100),name) ConfigName, convert(varchar(100),value) ConfigValue, 
@@ -92,14 +119,38 @@ EX3: dso db sql report --server=10.0.0.1 --user=user1 --pass=pass1
 		FROM sys.configurations where configuration_id in (109,503, 505, 1532,1535,1538,1539,1543,1544,1576, 1579,1589)
 		`
 		fmt.Println("SQL Server Instance Configuration:")
-		getInstanceConfig(connString, query3)
+		out3 := getInstanceConfig(connString, query3)
+		if outFormat == "table" {
+			olog.Print(out3)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(out3))
+		} else if outFormat == "csv" {
+			outputFile3 := util.GetFilenameDate("SqlServerInstanceReport", "csv")
+			b3, err := csvutil.Marshal(out3)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(outputFile3, string(b3))
+		}
 
 		var query4 string = `
 		SELECT name as ConfigName,value as ConfigValue FROM sys.database_scoped_configurations 
 		WHERE configuration_id in (1,2,4,8,13,16,18,26,35)
 		`
 		fmt.Println("SQL Server database scope Configuration:")
-		getDbScopeConfig(connString, query4)
+		out4 := getDbScopeConfig(connString, query4)
+		if outFormat == "table" {
+			olog.Print(out4)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(out4))
+		} else if outFormat == "csv" {
+			outputFile4 := util.GetFilenameDate("SqlServerDbReport", "csv")
+			b4, err := csvutil.Marshal(out4)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(outputFile4, string(b4))
+		}
 
 		var query5 string = `
 		CREATE TABLE #FileSize
@@ -129,7 +180,19 @@ EX3: dso db sql report --server=10.0.0.1 --user=user1 --pass=pass1
 		WHERE DbName NOT IN ('distribution', 'master', 'model', 'msdb')
 		`
 		fmt.Println("SQL Server Database Files:")
-		GetFileDetails(connString, query5)
+		out5 := GetFileDetails(connString, query5)
+		if outFormat == "table" {
+			olog.Print(out5)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(out5))
+		} else if outFormat == "csv" {
+			outputFile5 := util.GetFilenameDate("SqlServerDbFileReport", "csv")
+			b5, err := csvutil.Marshal(out5)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(outputFile5, string(b5))
+		}
 
 	},
 }
@@ -144,6 +207,7 @@ func init() {
 	dbSqlReportCmd.Flags().StringP("server", "S", "", "SQL Server instance name/IP address")
 	dbSqlReportCmd.Flags().Int("port", 1433, "SQL Server instance port")
 	dbSqlReportCmd.Flags().String("db", "", "SQL Server database name")
+	dbSqlReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
@@ -157,7 +221,7 @@ type displySetting struct {
 	ConfigValue string `json:"ConfigValue"`
 }
 
-func getDbSettingConfig(connStr, query string) {
+func getDbSettingConfig(connStr, query string) []displySetting {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
 		log.Fatal("Open connection failed:", err.Error())
@@ -189,7 +253,8 @@ func getDbSettingConfig(connStr, query string) {
 	if err != nil {
 		panic(err)
 	}
-	olog.Print(mc1)
+	//olog.Print(mc1)
+	return mc1
 }
 
 type instanceConfig struct {
@@ -203,7 +268,7 @@ type DbScopeConfig struct {
 	ConfigValue string `json:"ConfigValue"`
 }
 
-func getDbScopeConfig(connStr, query string) {
+func getDbScopeConfig(connStr, query string) []DbScopeConfig {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
 		log.Fatal("Open connection failed:", err.Error())
@@ -235,10 +300,11 @@ func getDbScopeConfig(connStr, query string) {
 	if err != nil {
 		panic(err)
 	}
-	olog.Print(mc1)
+	//olog.Print(mc1)
+	return mc1
 }
 
-func getInstanceConfig(connStr, query string) {
+func getInstanceConfig(connStr, query string) []instanceConfig {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
 		log.Fatal("Open connection failed:", err.Error())
@@ -271,21 +337,13 @@ func getInstanceConfig(connStr, query string) {
 		mc1 = append(mc1, c1)
 	}
 
-	//b, err := json.Marshal(mc1)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//fmt.Println(string(b))
-	//fmt.Println(mc1)
-
-	//fmt.Println(util.PrettyPrint(mc1))
-	olog.Print(mc1)
+	//olog.Print(mc1)
 
 	err = totalRows.Err()
 	if err != nil {
 		panic(err)
 	}
+	return mc1
 }
 
 type svrData struct {
@@ -293,7 +351,7 @@ type svrData struct {
 	Value         string `json:"srvData"`
 }
 
-func getServerConfig(connStr, query string) {
+func getServerConfig(connStr, query string) []svrData {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
 		log.Fatal("Open connection failed:", err.Error())
@@ -332,7 +390,8 @@ func getServerConfig(connStr, query string) {
 	}
 	//fmt.Println(util.PrettyPrint(mc1))
 	//fmt.Printf("%+v", mc1)
-	olog.Print(mc1)
+	//olog.Print(mc1)
+	return mc1
 }
 
 type FileDetails struct {
@@ -344,7 +403,7 @@ type FileDetails struct {
 	FreeSpaceMB   string `json:"FreeSpaceMB"`
 }
 
-func GetFileDetails(connStr, query string) {
+func GetFileDetails(connStr, query string) []FileDetails {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
 		log.Fatal("Open connection failed:", err.Error())
@@ -382,13 +441,6 @@ func GetFileDetails(connStr, query string) {
 		panic(err)
 	}
 
-	//fmt.Println(mc1)
-	//fmt.Println(util.PrettyPrint(mc1))
-	//tableprinter.Print(os.Stdout, mc1)
-	//b, err := json.Marshal(mc1)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//tableprinter.PrintJSON(os.Stdout, b)
-	olog.Print(mc1)
+	//olog.Print(mc1)
+	return mc1
 }

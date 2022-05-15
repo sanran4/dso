@@ -43,12 +43,10 @@ EX3: dso server report --idracIP=10.0.0.1 --user=user1 --pass=pass1
 			fmt.Println(util.PrettyPrint(output))
 		} else if outFormat == "csv" {
 			outputFile := util.GetFilenameDate("serverReport", "csv")
-			//var atts []AttrConv
 			b, err := csvutil.Marshal(output)
 			if err != nil {
 				fmt.Println("error:", err)
 			}
-			fmt.Println(string(b))
 			util.WriteCsvReport(outputFile, string(b))
 		}
 	},

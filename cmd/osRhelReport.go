@@ -74,7 +74,6 @@ Ex3: dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1
 				if err != nil {
 					fmt.Println("error:", err)
 				}
-				fmt.Println(string(b))
 				util.WriteCsvReport(outputFile, string(b))
 			}
 		}

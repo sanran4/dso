@@ -7,6 +7,7 @@ package cmd
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	"github.com/da0x/golang/olog"
+	"github.com/jszwec/csvutil"
 	"github.com/sanran4/dso/util"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +36,26 @@ EX2: dso server get --bios -I 10.0.0.1 --bios -U user1 -P pass1
 EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		initSrvGet(cmd, args)
+		idracIP, user, pass := initSrvGet(cmd, args)
+		srvGetBios, _ = cmd.Flags().GetBool("bios")
+		outFormat, _ := cmd.Flags().GetString("out")
+		var baseURL string
+		if srvGetBios {
+			baseURL = "https://" + idracIP + "/redfish/v1/Systems/System.Embedded.1/Bios"
+			out1 := srvGetBiosData(baseURL, user, pass)
+			if outFormat == "table" {
+				olog.Print(out1)
+			} else if outFormat == "json" {
+				fmt.Println(util.PrettyPrint(out1))
+			} else if outFormat == "csv" {
+				of1 := util.GetFilenameDate("serverBpsReport", "csv")
+				b1, err := csvutil.Marshal(out1)
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+				util.WriteCsvReport(of1, string(b1))
+			}
+		}
 	},
 }
 
@@ -47,6 +68,7 @@ func init() {
 	serverGetCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
 	serverGetCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
 	serverGetCmd.Flags().Bool("bios", false, "Get setting values for tuned-Adm profile")
+	serverGetCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
@@ -78,7 +100,7 @@ type srvGetBiosConfig struct {
 	Attributes BiosAttribute `json:"Attributes"`
 }
 
-func srvGetBiosData(baseURL, user, pass string) {
+func srvGetBiosData(baseURL, user, pass string) []srvGetBiosSetting {
 
 	// TODO: This is insecure; use only in dev environments.
 	tr := &http.Transport{
@@ -177,10 +199,11 @@ func srvGetBiosData(baseURL, user, pass string) {
 		}
 	}
 	//return attr
-	olog.Print(sgbs)
+	//olog.Print(sgbs)
+	return sgbs
 }
 
-func initSrvGet(cmd *cobra.Command, args []string) {
+func initSrvGet(cmd *cobra.Command, args []string) (ip, usr, pas string) {
 	idracIP, ok := os.LookupEnv("SERVER_IDRAC_HOST")
 	if !ok {
 		idracIP, _ = cmd.Flags().GetString("idracIP")
@@ -199,10 +222,5 @@ func initSrvGet(cmd *cobra.Command, args []string) {
 			log.Printf("error getting password %v", err)
 		}
 	}
-	srvGetBios, _ = cmd.Flags().GetBool("bios")
-	var baseURL string
-	if srvGetBios {
-		baseURL = "https://" + idracIP + "/redfish/v1/Systems/System.Embedded.1/Bios"
-		srvGetBiosData(baseURL, user, pass)
-	}
+	return idracIP, user, pass
 }

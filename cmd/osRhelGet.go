@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/da0x/golang/olog"
+	"github.com/jszwec/csvutil"
 	"github.com/sanran4/dso/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
@@ -35,14 +36,39 @@ Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
 		}
 		defer c.Close()
 
+		outFormat, _ := cmd.Flags().GetString("out")
 		if workload == "sql" {
 			if tunedAdm {
 				fmt.Println("Tuned-Adm Settings:")
-				getTunedAdmSettingsSql(c)
+				out1 := getTunedAdmSettingsSql(c)
+				if outFormat == "table" {
+					olog.Print(out1)
+				} else if outFormat == "json" {
+					fmt.Println(util.PrettyPrint(out1))
+				} else if outFormat == "csv" {
+					of1 := util.GetFilenameDate("osTunedAdmSettingReport", "csv")
+					b1, err := csvutil.Marshal(out1)
+					if err != nil {
+						fmt.Println("error:", err)
+					}
+					util.WriteCsvReport(of1, string(b1))
+				}
 			}
 			if mssqlConf {
 				fmt.Println("MSSQL-Conf Settings:")
-				getMssqlConfSettings(c)
+				out2 := getMssqlConfSettings(c)
+				if outFormat == "table" {
+					olog.Print(out2)
+				} else if outFormat == "json" {
+					fmt.Println(util.PrettyPrint(out2))
+				} else if outFormat == "csv" {
+					of2 := util.GetFilenameDate("mssqlConfigReport", "csv")
+					b2, err := csvutil.Marshal(out2)
+					if err != nil {
+						fmt.Println("error:", err)
+					}
+					util.WriteCsvReport(of2, string(b2))
+				}
 			}
 			if !tunedAdm && !mssqlConf {
 				fmt.Println("no sub flag (--tunedadm or --msconf) provided")
@@ -53,15 +79,50 @@ Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
 		if workload == "orcl" {
 			if tunedAdm {
 				fmt.Println("Current Tuned-Adm Settings:")
-				getTunedAdmSettingsOrcl(c)
+				out3 := getTunedAdmSettingsOrcl(c)
+				if outFormat == "table" {
+					olog.Print(out3)
+				} else if outFormat == "json" {
+					fmt.Println(util.PrettyPrint(out3))
+				} else if outFormat == "csv" {
+					of3 := util.GetFilenameDate("osTunedAdmSettingReport", "csv")
+					b3, err := csvutil.Marshal(out3)
+					if err != nil {
+						fmt.Println("error:", err)
+					}
+					util.WriteCsvReport(of3, string(b3))
+				}
 			} else {
 				fmt.Println("Current Tuned-Adm Settings:")
-				getTunedAdmSettingsOrcl(c)
+				out4 := getTunedAdmSettingsOrcl(c)
+				if outFormat == "table" {
+					olog.Print(out4)
+				} else if outFormat == "json" {
+					fmt.Println(util.PrettyPrint(out4))
+				} else if outFormat == "csv" {
+					of4 := util.GetFilenameDate("osTunedAdmSettingReport", "csv")
+					b4, err := csvutil.Marshal(out4)
+					if err != nil {
+						fmt.Println("error:", err)
+					}
+					util.WriteCsvReport(of4, string(b4))
+				}
 				fmt.Println("Hugepage Settings:")
-				getHugePageDetails(c)
+				out5 := getHugePageDetails(c)
+				if outFormat == "table" {
+					olog.Print(out5)
+				} else if outFormat == "json" {
+					fmt.Println(util.PrettyPrint(out5))
+				} else if outFormat == "csv" {
+					of5 := util.GetFilenameDate("osHugepageSettingReport", "csv")
+					b5, err := csvutil.Marshal(out5)
+					if err != nil {
+						fmt.Println("error:", err)
+					}
+					util.WriteCsvReport(of5, string(b5))
+				}
 			}
 		}
-
 	},
 }
 
@@ -77,6 +138,7 @@ func init() {
 	osRhelGetCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
 	osRhelGetCmd.Flags().Bool("tunedadm", false, "Get setting values for tuned-Adm profile")
 	osRhelGetCmd.Flags().Bool("msconf", false, "Get setting values for mssql-conf")
+	osRhelReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
 	//osRhelGetCmd.MarkFlagRequired("ip")
@@ -91,7 +153,7 @@ type displaySettings struct {
 	Diff          string `json:"Diff"`
 }
 
-func getHugePageDetails(client *ssh.Client) {
+func getHugePageDetails(client *ssh.Client) []displaySettings {
 	var settingSlice []displaySettings
 	cmd1 := "a=$(grep Hugepagesize /proc/meminfo | awk {'print $2'}) && echo $a"
 	res1, err := execCmd(client, cmd1)
@@ -99,11 +161,7 @@ func getHugePageDetails(client *ssh.Client) {
 		panic(err)
 	}
 	hugePageRecomendation := getHugepagesRecomendValue(client)
-	//setting := displaySettings{
-	//	Settings:      "vm.nr_hugepages",
-	//	RunningValues: res1.String(),
-	//	OptimalValues: hugePageRecomendation,
-	//}
+
 	var setting displaySettings
 	setting.Settings = "vm.nr_hugepages"
 	setting.RunningValues = strings.Trim(res1.String(), "\n")
@@ -113,7 +171,8 @@ func getHugePageDetails(client *ssh.Client) {
 	}
 	settingSlice = append(settingSlice, setting)
 	//fmt.Println(setting)
-	olog.Print(settingSlice)
+	//olog.Print(settingSlice)
+	return settingSlice
 }
 
 type tunedAdmSettings struct {
@@ -173,7 +232,7 @@ func initOsRhelGetStep(cmd *cobra.Command, args []string) (*ssh.Client, error) {
 	return client, nil
 }
 
-func getTunedAdmSettingsOrcl(client *ssh.Client) {
+func getTunedAdmSettingsOrcl(client *ssh.Client) []tunedAdmSettings {
 	cmd1 := `
 	sysctl vm.swappiness vm.dirty_background_ratio vm.dirty_ratio vm.dirty_expire_centisecs vm.dirty_writeback_centisecs kernel.shmmax kernel.shmall kernel.shmmni fs.file-max fs.aio-max-nr net.core.rmem_default net.core.rmem_max net.core.wmem_default net.core.wmem_max kernel.panic_on_oops kernel.numa_balancing | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}" }' && sysctl net.ipv4.ip_local_port_range | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3" "$4 "\"}" }' && sysctl kernel.sem | awk ' { print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3" "$4" "$5" "$6 "\"}" }'
 	`
@@ -235,11 +294,11 @@ func getTunedAdmSettingsOrcl(client *ssh.Client) {
 			osdata[k].Diff = "*"
 		}
 	}
-	olog.Print(osdata)
-	//return osdata
+	//olog.Print(osdata)
+	return osdata
 }
 
-func getTunedAdmSettingsSql(client *ssh.Client) {
+func getTunedAdmSettingsSql(client *ssh.Client) []tunedAdmSettings {
 	cmd1 := `
 	sysctl -a | grep -E 'vm.swappiness|vm.dirty_background_ratio|vm.dirty_ratio|vm.dirty_expire_centisecs|vm.dirty_writeback_centisecs|vm.transparent_hugepages|vm.max_map_count|net.core.rmem_default|net.core.rmem_max|net.core.wmem_default|net.core.wmem_max|kernel.numa_balancing|kernel.sched_min_granularity_ns|kernel.sched_wakeup_granularity_ns' |awk ' {
 		print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}"
@@ -302,10 +361,11 @@ func getTunedAdmSettingsSql(client *ssh.Client) {
 			osdata[k].Diff = "*"
 		}
 	}
-	olog.Print(osdata)
+	//olog.Print(osdata)
+	return osdata
 }
 
-func getMssqlConfSettings(client *ssh.Client) {
+func getMssqlConfSettings(client *ssh.Client) []mssqlConfSettings {
 	cmd1 := `
 { if echo "$(/opt/mssql/bin/mssql-conf get EULA)" | grep -q "No"; 
 then echo "accepteula : NotSet"; 
@@ -341,5 +401,6 @@ print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}"
 		}
 	}
 
-	olog.Print(osdata)
+	//olog.Print(osdata)
+	return osdata
 }

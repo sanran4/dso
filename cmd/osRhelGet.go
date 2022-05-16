@@ -138,7 +138,7 @@ func init() {
 	osRhelGetCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
 	osRhelGetCmd.Flags().Bool("tunedadm", false, "Get setting values for tuned-Adm profile")
 	osRhelGetCmd.Flags().Bool("msconf", false, "Get setting values for mssql-conf")
-	osRhelReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
+	osRhelGetCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
 	//osRhelGetCmd.MarkFlagRequired("ip")

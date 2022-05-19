@@ -32,7 +32,6 @@ var serverGetCmd = &cobra.Command{
 	Long:  `This get command will pull best practice settings for Intel based server layer of the solution`,
 	Example: `
 EX1: dso server get --bios -I 10.0.0.1 -U user1 -P pass1
-EX2: dso server get --bios -I 10.0.0.1 --bios -U user1 -P pass1
 EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
 `,
 	Run: func(cmd *cobra.Command, args []string) {

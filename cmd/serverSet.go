@@ -31,7 +31,7 @@ var serverSetCmd = &cobra.Command{
 	Short: "This get command will set best practice settings for server layer of the solution",
 	Long:  `This get command will set best practice settings for Intel based server layer of the solution`,
 	Example: `
-EX1: dso server set --bios -A "" -I 10.0.0.1 -U user1 -P pass1
+EX1: dso server set -A "SysProfile:PerfOptimized" -I 10.0.0.1 -U user1 -P pass1
 EX2: dso server get --bios -I 10.0.0.1 --bios -U user1 -P pass1
 EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
 `,

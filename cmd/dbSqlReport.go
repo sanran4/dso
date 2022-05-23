@@ -19,15 +19,15 @@ var dbSqlReportCmd = &cobra.Command{
 	Short: "This report command will pull report from SQL Server",
 	Long:  `This report command will pull report from SQL Server`,
 	Example: `
-EX1: dso db sql report -S 10.0.0.1 -U user1 
-EX2: dso db sql report -S 10.0.0.1 -U user1 -P pass1 
-EX3: dso db sql report --server=10.0.0.1 --user=user1 --pass=pass1
+EX1: dso db sql report -I 10.0.0.1 -U user1 
+EX2: dso db sql report -I 10.0.0.1 -U user1 -P pass1 
+EX3: dso db sql report --instance=10.0.0.1 --user=user1 --pass=pass1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		server, ok := os.LookupEnv("SQL_DB_HOST")
 		if !ok {
-			server, _ = cmd.Flags().GetString("server")
+			server, _ = cmd.Flags().GetString("instance")
 		}
 		user, ok := os.LookupEnv("SQL_DB_USER")
 		if !ok {
@@ -204,7 +204,7 @@ func init() {
 	// Format: biosCmd.PersistentFlags().StringP(name string, shorthand string, value string, usage string)
 	dbSqlReportCmd.Flags().StringP("user", "U", "", "Username to connect to SQL Server instance")
 	dbSqlReportCmd.Flags().StringP("pass", "P", "", "Password to connect to SQL Server instance")
-	dbSqlReportCmd.Flags().StringP("server", "S", "", "SQL Server instance name/IP address")
+	dbSqlReportCmd.Flags().StringP("instance", "I", "", "SQL Server instance name/IP address")
 	dbSqlReportCmd.Flags().Int("port", 1433, "SQL Server instance port")
 	dbSqlReportCmd.Flags().String("db", "", "SQL Server database name")
 	dbSqlReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")

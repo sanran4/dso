@@ -140,8 +140,7 @@ func srvGetBiosData(baseURL, user, pass string) []srvGetBiosSetting {
 	}
 
 	//fmt.Println(PrettyPrint(biosConfig))
-	attr := BiosAttribute{}
-	attr = srvgb.Attributes
+	var attr BiosAttribute = srvgb.Attributes
 
 	var sgbs []srvGetBiosSetting
 

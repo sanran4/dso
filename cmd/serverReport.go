@@ -190,8 +190,7 @@ func fetchReportData(baseURL, user, pass string) Attribute {
 	}
 
 	//fmt.Println(PrettyPrint(biosConfig))
-	attr := Attribute{}
-	attr = biosConfig.Attributes
+	var attr Attribute = biosConfig.Attributes
 
 	//fmt.Println(attr)
 	return attr

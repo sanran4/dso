@@ -230,10 +230,6 @@ func sqlSetQueryOptimizerHotFixes(connStr string) {
 	fmt.Println("SQL Server QUERY_OPTIMIZER_HOTFIXES set successfully")
 }
 
-func setSqlConfigFromAttribute(connStr string) {
-
-}
-
 func sqlsetDAC(connStr string) {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/da0x/golang/olog"
+	"github.com/jszwec/csvutil"
 	"github.com/sanran4/dso/util"
 	go_ora "github.com/sijms/go-ora/v2"
 	"github.com/spf13/cobra"
@@ -16,10 +17,22 @@ var dbOrclGetCmd = &cobra.Command{
 	Short: "This get command will Work for fetching best practice settings from oracle database layer ",
 	Run: func(cmd *cobra.Command, args []string) {
 		srv, usr, pas, svc, prt := parseDbOrclGetFlags(cmd, args)
+		outFormat, _ := cmd.Flags().GetString("out")
 		connString := fmt.Sprintf("oracle://%s:%s@%s:%d/%s", usr, pas, srv, prt, svc)
 		//RestartOracleDatabase(connString)
 		out1 := orclGetBPS(connString)
-		olog.Print(out1)
+		if outFormat == "table" {
+			olog.Print(out1)
+		} else if outFormat == "json" {
+			fmt.Println(util.PrettyPrint(out1))
+		} else if outFormat == "csv" {
+			of1 := util.GetFilenameDate("oracleBestPractice", "csv")
+			b1, err := csvutil.Marshal(out1)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			util.WriteCsvReport(of1, string(b1))
+		}
 
 	},
 }
@@ -32,6 +45,7 @@ func init() {
 	dbOrclGetCmd.Flags().StringP("instance", "I", "", "oracle db server instance name/IP address")
 	dbOrclGetCmd.Flags().Int("port", 1521, "oracle db port")
 	dbOrclGetCmd.Flags().String("svc", "", "oracle service name")
+	dbOrclGetCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//dbOrclRptCmd.MarkFlagRequired("server")
 	//dbOrclRptCmd.MarkFlagRequired("user")

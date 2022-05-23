@@ -62,6 +62,8 @@ EX3: dso db sql get --server=10.0.0.1 --user=user1 --pass=pass1
 	CASE WHEN convert(bigint,ConfigValue) = convert(bigint,OptimalValue) THEN ''
 	ELSE '*' END as Diff
 	FROM (
+	SELECT 'Dedicated Remote Admin Connection(DAC)'as ConfigName, value as ConfigValue, '1' as OptimalValue FROM sys.configurations WHERE name like '%remote admin connections%' 
+	union all
 	SELECT 'CPU_AffinityMask'as ConfigName, value as ConfigValue, (SELECT convert(varchar(50),(POWER(2,cpu_count)-1)) FROM sys.dm_os_sys_info) as OptimalValue
 	FROM sys.configurations WHERE name like '%affinity mask%' 
 	union all

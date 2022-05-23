@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -16,15 +17,15 @@ var dbSqlSetCmd = &cobra.Command{
 	Short: "This set command will configure Dell Recomended bast practice settings to SQL Server",
 	Long:  `This set command will configure Dell Recomended bast practice settings to SQL Server`,
 	Example: `
-EX1: dso db sql set -S 10.0.0.1 -U user1 
-EX2: dso db sql set -S 10.0.0.1 -U user1 -P pass1
-EX3: dso db sql set --server=10.0.0.1 --user=user1 --pass=pass1
+EX1: dso db sql set -I 10.0.0.1 -U user1 
+EX2: dso db sql set -I 10.0.0.1 -U user1 -P pass1
+EX3: dso db sql set --instance=10.0.0.1 --user=user1 --pass=pass1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		server, ok := os.LookupEnv("SQL_DB_HOST")
 		if !ok {
-			server, _ = cmd.Flags().GetString("server")
+			server, _ = cmd.Flags().GetString("instance")
 		}
 		user, ok := os.LookupEnv("SQL_DB_USER")
 		if !ok {
@@ -42,32 +43,39 @@ EX3: dso db sql set --server=10.0.0.1 --user=user1 --pass=pass1
 				log.Printf("error getting password %v", err)
 			}
 		}
+		bpsFlag, _ := cmd.Flags().GetBool("bps")
+		affinity, _ := cmd.Flags().GetBool("affinity")
+		sqlmem, _ := cmd.Flags().GetBool("sqlmem")
+		autogrowth, _ := cmd.Flags().GetBool("autogrowth")
+		qohf, _ := cmd.Flags().GetBool("qohf")
+		dac, _ := cmd.Flags().GetBool("dac")
 
 		connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", server, user, pass, port)
 
-		var query2 string = `
-		select srvSetting, srvData from (
-			SELECT  
-			  SERVERPROPERTY('MachineName') AS ComputerName,
-			  SERVERPROPERTY('ServerName') AS InstanceName,  
-			  SERVERPROPERTY('ProductVersion') AS ProductVersion,  
-			  SERVERPROPERTY('ProductLevel') AS ProductLevel,  
-			  SERVERPROPERTY('Edition') AS Edition,
-			  SERVERPROPERTY('InstanceDefaultDataPath') AS InstanceDefaultDataPath,
-			  SERVERPROPERTY('InstanceDefaultLogPath') AS InstanceDefaultLogPath,
-			  SERVERPROPERTY('InstanceDefaultBackupPath') AS InstanceDefaultBackupPath,
-			  SERVERPROPERTY('Collation') AS Collation,
-			  SERVERPROPERTY('IsClustered') AS IsClustered,
-			  SERVERPROPERTY('IsHadrEnabled') AS IsHadrEnabled,
-			  SERVERPROPERTY('IsPolyBaseInstalled') AS IsPolyBaseInstalled
-			) as t1
-			UNPIVOT(srvData FOR srvSetting IN (
-				ComputerName, InstanceName, ProductVersion, ProductLevel, Edition, InstanceDefaultDataPath, InstanceDefaultLogPath, InstanceDefaultBackupPath, Collation, IsClustered, IsHadrEnabled, IsPolyBaseInstalled)
-				) AS unp
-		`
-		fmt.Println("SQL Server Property:")
-		getServerConfig(connString, query2)
-
+		if bpsFlag {
+			sqlsetDAC(connString)
+			sqlSetAffinityMask(connString)
+			sqlSetSqlMemory(connString)
+			sqlSetFileAutoGrowth(connString)
+			sqlSetQueryOptimizerHotFixes(connString)
+			fmt.Println("Applied all SQL best practice configurations")
+		} else {
+			if affinity {
+				sqlSetAffinityMask(connString)
+			}
+			if sqlmem {
+				sqlSetSqlMemory(connString)
+			}
+			if autogrowth {
+				sqlSetFileAutoGrowth(connString)
+			}
+			if qohf {
+				sqlSetQueryOptimizerHotFixes(connString)
+			}
+			if dac {
+				sqlsetDAC(connString)
+			}
+		}
 	},
 }
 
@@ -78,177 +86,177 @@ func init() {
 	// Format: biosCmd.PersistentFlags().StringP(name string, shorthand string, value string, usage string)
 	dbSqlSetCmd.Flags().StringP("user", "U", "", "Username to connect to SQL Server instance")
 	dbSqlSetCmd.Flags().StringP("pass", "P", "", "Password to connect to SQL Server instance")
-	dbSqlSetCmd.Flags().StringP("server", "S", "", "SQL Server instance name/IP address")
+	dbSqlSetCmd.Flags().StringP("instance", "I", "", "SQL Server instance name/IP address")
 	dbSqlSetCmd.Flags().Int("port", 1433, "SQL Server instance port")
 	dbSqlSetCmd.Flags().String("db", "", "SQL Server database name")
+	dbSqlSetCmd.Flags().Bool("bps", false, "Set SQL Server all best practices at once")
+	dbSqlSetCmd.Flags().Bool("affinity", false, "Set SQL Server CPU Affinity at instance level")
+	dbSqlSetCmd.Flags().Bool("sqlmem", false, "Set SQL Server Min & Max Memory at instance level")
+	dbSqlSetCmd.Flags().Bool("autogrowth", false, "Set SQL Server data and log file growth for user databases")
+	dbSqlSetCmd.Flags().Bool("qohf", false, "Set SQL Server Query Optimizer HotFixes for user databases")
+	dbSqlSetCmd.Flags().Bool("dac", false, "Enable SQL Server Dedicated remote admin connection")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
-	dbSqlSetCmd.MarkFlagRequired("server")
-	dbSqlSetCmd.MarkFlagRequired("user")
+	//dbSqlSetCmd.MarkFlagRequired("server")
+	//dbSqlSetCmd.MarkFlagRequired("user")
 	//dbSqlReportCmd.MarkFlagRequired("pass")
 }
 
-/*
-type instanceConfig struct {
-	ConfigName        string `json:"ConfigName"`
-	ConfigValue       string `json:"ConfigValue"`
-	ConfigValueInUse  string `json:"ConfigValueInUse"`
-	ConfigDescription string `json:"ConfigDescription"`
-}
-
-func getInstanceConfig(connStr, query string) {
+func sqlSetAffinityMask(connStr string) {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
 		log.Fatal("Open connection failed:", err.Error())
 	}
 	defer conn.Close()
-
+	var query string = `
+declare @cmd nvarchar(1000)
+select @cmd = 'ALTER SERVER CONFIGURATION SET PROCESS AFFINITY CPU = 0 TO '+( convert(varchar(10),(cpu_count-1)) ) from sys.dm_os_sys_info
+EXECUTE sp_executesql @cmd
+	`
 	stmt, err := conn.Prepare(query)
 	if err != nil {
 		log.Fatal("Prepare failed:", err.Error())
 	}
 	defer stmt.Close()
-
-	//row := stmt.QueryRow()
-	totalRows, err := stmt.Query()
+	_, err = stmt.Exec()
 	if err != nil {
-		// handle this error better than this
 		fmt.Println(err)
 		panic(err)
 	}
-	defer totalRows.Close()
-
-	mc1 := []instanceConfig{}
-	for totalRows.Next() {
-		c1 := instanceConfig{}
-		err = totalRows.Scan(&c1.ConfigName, &c1.ConfigValue, &c1.ConfigValueInUse, &c1.ConfigDescription)
-		if err != nil {
-			panic(err)
-		}
-
-		mc1 = append(mc1, c1)
-	}
-
-	//b, err := json.Marshal(mc1)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//fmt.Println(string(b))
-	//fmt.Println(mc1)
-
-	//fmt.Println(util.PrettyPrint(mc1))
-	olog.Print(mc1)
-
-	err = totalRows.Err()
-	if err != nil {
-		panic(err)
-	}
+	fmt.Println("SQL Server CPU Affinity set successfully")
 }
 
-type svrData struct {
-	ServerSetting string `json:"srvSetting"`
-	Value         string `json:"srvData"`
-}
-
-func getServerConfig(connStr, query string) {
+func sqlSetSqlMemory(connStr string) {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
 		log.Fatal("Open connection failed:", err.Error())
 	}
 	defer conn.Close()
-
+	var query string = `
+	declare @currSqlMem int, @sqlMem int
+	select @currSqlMem = (total_physical_memory_kb/1024) from sys.dm_os_sys_memory
+	select @currSqlMem
+	if exists (select 1 FROM sys.dm_os_host_info where host_platform = 'Linux')
+		set @sqlMem = @currSqlMem
+	ELSE
+		set @sqlMem = ((@currSqlMem * 0.8)/2)*2
+	;
+	BEGIN
+	exec sp_configure 'show advanced options', 1;
+	reconfigure
+	exec sp_configure 'min server memory', @sqlMem;
+	exec sp_configure 'max server memory', @sqlMem;
+	exec sp_configure 'show advanced options', 0;
+	reconfigure
+	END
+	`
 	stmt, err := conn.Prepare(query)
 	if err != nil {
 		log.Fatal("Prepare failed:", err.Error())
 	}
 	defer stmt.Close()
-
-	//row := stmt.QueryRow()
-	totalRows, err := stmt.Query()
+	_, err = stmt.Exec()
 	if err != nil {
-		// handle this error better than this
 		fmt.Println(err)
 		panic(err)
 	}
-	defer totalRows.Close()
-
-	mc1 := []svrData{}
-	for totalRows.Next() {
-		c1 := svrData{}
-		err = totalRows.Scan(&c1.ServerSetting, &c1.Value)
-		if err != nil {
-			panic(err)
-		}
-		mc1 = append(mc1, c1)
-	}
-
-	// get any error encountered during iteration
-	err = totalRows.Err()
-	if err != nil {
-		panic(err)
-	}
-	//fmt.Println(util.PrettyPrint(mc1))
-	//fmt.Printf("%+v", mc1)
-	olog.Print(mc1)
+	fmt.Println("SQL Server Min and Max memory set successfully")
 }
 
-type FileDetails struct {
-	DbName        string `json:"DbName"`
-	FileName      string `json:"FileName"`
-	PhysicalName  string `json:"PhysicalName"`
-	Type          string `json:"Type"`
-	CurrentSizeMB string `json:"CurrentSizeMB"`
-	FreeSpaceMB   string `json:"FreeSpaceMB"`
-}
-
-func GetFileDetails(connStr, query string) {
+func sqlSetFileAutoGrowth(connStr string) {
 	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
 		log.Fatal("Open connection failed:", err.Error())
 	}
 	defer conn.Close()
-
+	var query string = `
+declare @growthSizeInMb int, @cmd nvarchar(max)
+set @growthSizeInMb = 1024
+select @cmd = ''
+select @cmd = @cmd +'; '+'ALTER DATABASE '+db_name(database_id)+'
+	MODIFY FILE ( NAME = N'''+name+''', FILEGROWTH = '+ convert(nvarchar(100),@growthSizeInMb)+'MB )'
+from sys.master_files 
+where database_id not in (db_id('master'),db_id('model'),db_id('msdb'),db_id('tempdb'))
+select @cmd = right(@cmd, len(@cmd)-1)
+EXECUTE sp_executesql @cmd
+	`
 	stmt, err := conn.Prepare(query)
 	if err != nil {
 		log.Fatal("Prepare failed:", err.Error())
 	}
 	defer stmt.Close()
-
-	//row := stmt.QueryRow()
-	totalRows, err := stmt.Query()
+	_, err = stmt.Exec()
 	if err != nil {
-		// handle this error better than this
 		fmt.Println(err)
 		panic(err)
 	}
-	defer totalRows.Close()
+	fmt.Println("SQL Server Database filegrowth set successfully")
+}
 
-	var mc1 []FileDetails
-	for totalRows.Next() {
-		var c1 FileDetails
-		err = totalRows.Scan(&c1.DbName, &c1.FileName, &c1.PhysicalName, &c1.Type, &c1.CurrentSizeMB, &c1.FreeSpaceMB)
-		if err != nil {
-			panic(err)
-		}
-		mc1 = append(mc1, c1)
-	}
-
-	// get any error encountered during iteration
-	err = totalRows.Err()
+func sqlSetQueryOptimizerHotFixes(connStr string) {
+	conn, err := sql.Open("mssql", connStr)
 	if err != nil {
+		log.Fatal("Open connection failed:", err.Error())
+	}
+	defer conn.Close()
+	var query string = `
+	DECLARE @dbName TABLE (dbname sysname)
+	declare @cnt int
+	insert into @dbName(dbname)
+	select name from sys.sysdatabases where name not in ('master','model','msdb','tempdb')
+	select @cnt = count(1) from @dbName
+	while @cnt > 0
+	BEGIN
+	declare @cmd nvarchar(1000)
+	declare @dname nvarchar(255)
+	select top 1 @dname = dbname from @dbName
+	select top 1 @cmd = 'use '+ @dname + '; ALTER DATABASE SCOPED CONFIGURATION SET QUERY_OPTIMIZER_HOTFIXES = ON;' 
+	EXECUTE sp_executesql @cmd
+	delete from @dbName where dbname = @dname
+	select @cnt = count(1) from @dbName
+	END
+	`
+	stmt, err := conn.Prepare(query)
+	if err != nil {
+		log.Fatal("Prepare failed:", err.Error())
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec()
+	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
-
-	//fmt.Println(mc1)
-	//fmt.Println(util.PrettyPrint(mc1))
-	//tableprinter.Print(os.Stdout, mc1)
-	//b, err := json.Marshal(mc1)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//tableprinter.PrintJSON(os.Stdout, b)
-	olog.Print(mc1)
+	fmt.Println("SQL Server QUERY_OPTIMIZER_HOTFIXES set successfully")
 }
-*/
+
+func setSqlConfigFromAttribute(connStr string) {
+
+}
+
+func sqlsetDAC(connStr string) {
+	conn, err := sql.Open("mssql", connStr)
+	if err != nil {
+		log.Fatal("Open connection failed:", err.Error())
+	}
+	defer conn.Close()
+	var query string = `
+	BEGIN
+	exec sp_configure 'show advanced options', 1;
+	exec sp_configure 'remote admin connections', 1;
+	exec sp_configure 'show advanced options', 0;
+	reconfigure
+	END
+	`
+	stmt, err := conn.Prepare(query)
+	if err != nil {
+		log.Fatal("Prepare failed:", err.Error())
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec()
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println("SQL Server Dedicated Remote Admin Connection(DAC) has been enabled successfully")
+}

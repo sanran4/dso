@@ -20,8 +20,10 @@ var dbSqlGetCmd = &cobra.Command{
 	Long:  `This report command will pull best practice settings applicable for SQL Server`,
 	Example: `
 EX1: dso db sql get -I 10.0.0.1 -U user1 
-EX2: dso db sql get -S 10.0.0.1 -U user1 -P pass1
-EX3: dso db sql get --server=10.0.0.1 --user=user1 --pass=pass1
+EX2: dso db sql get -I 10.0.0.1 -U user1 -P pass1
+EX3: dso db sql get -I 10.0.0.1 -U user1 -P pass1 -o json
+EX4: dso db sql get -I 10.0.0.1 -U user1 -P pass1 -o csv
+EX5: dso db sql get --instance=10.0.0.1 --user=user1 --pass=pass1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 

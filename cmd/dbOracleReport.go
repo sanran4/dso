@@ -45,11 +45,11 @@ var dbOrclRptCmd = &cobra.Command{
 		//fmt.Println(connString)
 
 		query1 := `
-		select FILE_NAME, TABLESPACE_NAME, BYTES from dba_data_files
+		select FILE_NAME, TABLESPACE_NAME, (BYTES/1048576) as SizeInMb from dba_data_files
 		UNION
-		select FILE_NAME, TABLESPACE_NAME, BYTES from dba_temp_files
+		select FILE_NAME, TABLESPACE_NAME, (BYTES/1048576) as SizeInMb from dba_temp_files
 		UNION
-		select name AS FILE_NAME, 'CONTROL' AS TABLESPACE_NAME, (block_size * file_size_blks) AS BYTES from v$controlfile WHERE IS_RECOVERY_DEST_FILE = 'NO'
+		select name AS FILE_NAME, 'CONTROL' AS TABLESPACE_NAME, ((block_size * file_size_blks)/1048576) AS SizeInMb from v$controlfile WHERE IS_RECOVERY_DEST_FILE = 'NO'
 		`
 		fmt.Println("Oracle database data files details")
 		out1 := getOrclDataFile(connString, query1)
@@ -68,7 +68,7 @@ var dbOrclRptCmd = &cobra.Command{
 
 		// select l.GROUP#, l.THREAD#, f.MEMBER, l.BYTES from v\$logfile f, v\$log l where f.group#=l.group#
 		query2 := `
-		select l.GROUP#, l.THREAD#, f.MEMBER, l.BYTES from v$logfile f, v$log l where f.group# = l.group#
+		select l.GROUP#, l.THREAD#, f.MEMBER, (l.BYTES/1048576) as SizeInMb from v$logfile f, v$log l where f.group# = l.group#
 		`
 		fmt.Println("Oracle database log files details")
 		//getOrclFileDetails(connString, query2)
@@ -87,7 +87,7 @@ var dbOrclRptCmd = &cobra.Command{
 		}
 
 		query3 := `
-		select g.NAME, d.path,  d.total_mb FROM v$asm_disk d, v$asm_diskgroup g where g.GROUP_NUMBER = d.GROUP_NUMBER
+		select g.NAME, d.path,  d.total_mb, d.free_MB FROM v$asm_disk d, v$asm_diskgroup g where g.GROUP_NUMBER = d.GROUP_NUMBER
 		`
 		fmt.Println("Oracle ASM disk details")
 		out3 := getOrclAsmDisks(connString, query3)
@@ -130,7 +130,7 @@ func init() {
 
 	dbOrclRptCmd.Flags().StringP("user", "U", "", "Username to connect to oracle instance")
 	dbOrclRptCmd.Flags().StringP("pass", "P", "", "Password to connect to oracle instance")
-	dbOrclRptCmd.Flags().StringP("server", "S", "", "oracle db server name/IP address")
+	dbOrclRptCmd.Flags().StringP("instance", "I", "", "oracle db server name/IP address")
 	dbOrclRptCmd.Flags().Int("port", 1521, "oracle db port")
 	dbOrclRptCmd.Flags().String("svc", "", "oracle service name")
 	//dbOrclRptCmd.Flags().StringP("type", "t", "", "Report type to be fetched")
@@ -144,7 +144,7 @@ func init() {
 func parseDbOrclRptFlags(cmd *cobra.Command, args []string) (srv, usr, pas, svc string, prt int) {
 	server, ok := os.LookupEnv("ORCL_DB_HOST")
 	if !ok {
-		server, _ = cmd.Flags().GetString("server")
+		server, _ = cmd.Flags().GetString("instance")
 	}
 	user, ok := os.LookupEnv("ORCL_DB_USER")
 	if !ok {
@@ -179,14 +179,14 @@ type orclDataFile struct {
 	//Id   int64  `db:"name:visit_id"`
 	FileName    string `db:"name:FILE_NAME"`
 	TableSpace  string `db:"name:TABLESPACE_NAME"`
-	SizeInBytes string `db:"name:BYTES"`
+	SizeInMB string `db:"name:SizeInMb"`
 	//Date time.Time	`db:"name:visit_date"`
 }
 type orclLogFile struct {
-	GroupNo     int64  `db:"name:GROUP#"`
-	ThreadNo    string `db:"name:THREAD#"`
-	Member      string `db:"name:MEMBER"`
-	SizeInBytes string `db:"name:BYTES"`
+	GroupNo  int64  `db:"name:GROUP#"`
+	ThreadNo string `db:"name:THREAD#"`
+	Member   string `db:"name:MEMBER"`
+	SizeInMB string `db:"name:SizeInMb"`
 }
 
 func getOrclLogFile(connStr, query string) []orclLogFile {
@@ -280,9 +280,10 @@ func getOrclDbParameters(connStr, query string) []orclDbParameters {
 }
 
 type orclAsmDisks struct {
-	AsmGroupName string `db:"name:NAME"`
-	AsmDiskPath  string `db:"name:PATH"`
-	SizeInMB     string `db:"name:Total_MB"`
+	AsmGroupName  string `db:"name:NAME"`
+	AsmDiskPath   string `db:"name:PATH"`
+	TotalSizeInMB string `db:"name:Total_MB"`
+	FreeSizeInMB  string `db:"name:Free_MB"`
 }
 
 func getOrclAsmDisks(connStr, query string) []orclAsmDisks {

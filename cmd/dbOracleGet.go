@@ -15,12 +15,20 @@ import (
 var dbOrclGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "This get command will Work for fetching best practice settings from oracle database layer ",
+	Example: `
+EX1: dso db oracle get -I 10.0.0.1 -U user1 
+EX2: dso db oracle get -I 10.0.0.1 -U user1 -P pass1
+EX3: dso db oracle get -I 10.0.0.1 -U user1 -P pass1 -o json
+EX4: dso db oracle get -I 10.0.0.1 -U user1 -P pass1 -o csv
+EX5: dso db oracle get --instance=10.0.0.1 --user=user1 --pass=pass1
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		srv, usr, pas, svc, prt := parseDbOrclGetFlags(cmd, args)
 		outFormat, _ := cmd.Flags().GetString("out")
 		connString := fmt.Sprintf("oracle://%s:%s@%s:%d/%s", usr, pas, srv, prt, svc)
 		//RestartOracleDatabase(connString)
 		out1 := orclGetBPS(connString)
+		fmt.Println("Oracle DB Best practice configuration:")
 		if outFormat == "table" {
 			olog.Print(out1)
 		} else if outFormat == "json" {
@@ -90,7 +98,7 @@ func orclGetSGAOptimal(connStr string) string {
 	defer DB.Close()
 
 	query := `
-	SELECT CAST(CAST((max(value)/(1024*1024*1024) ) * 0.8 AS INTEGER) AS varchar2(50)) AS OptimalValue
+	SELECT CAST((max(value)/1048576 )*0.8/64 AS integer)*64 AS OptimalValue
 	FROM dba_hist_osstat WHERE stat_name = 'PHYSICAL_MEMORY_BYTES'
 	`
 	stmt := go_ora.NewStmt(query, DB)
@@ -127,16 +135,18 @@ func orclGetBPS(connStr string) []orclGetBPSData {
 	defer DB.Close()
 
 	query := `
-SELECT 'SGA_Total_GB' AS ConfigName, CAST((sum(value)/1024/1024) AS varchar2(50) ) AS ConfigValue FROM v$sga
-UNION All
-select x.ksppinm ConfigName,  y.ksppstvl ConfigValue
-from sys.x$ksppi x, sys.x$ksppcv y
-where 1=1 and x.inst_id = y.inst_id and x.indx = y.indx
-and x.ksppinm ='_high_priority_processes'
-UNION All
-select '#LogFiles' AS ConfigName, CAST(count(1) AS varchar2(50)) AS ConfigValue from gv$log
-UNION All
-select 'LogFiles_Size_MB' AS ConfigName, CAST((max(BYTES)/1024/1024) AS varchar2(50)) AS ConfigValue from gv$log 
+	select 'sga_max_size_MB' AS ConfigName, CAST((value/1048576) AS varchar2(50)) AS ConfigValue from v$parameter where name = 'sga_max_size'
+	UNION ALL
+	select 'sga_target_MB' AS ConfigName, CAST((value/1048576) AS varchar2(50)) AS ConfigValue from v$parameter where name = 'sga_target'
+	UNION All
+	select x.ksppinm ConfigName,  y.ksppstvl ConfigValue
+	from sys.x$ksppi x, sys.x$ksppcv y
+	where 1=1 and x.inst_id = y.inst_id and x.indx = y.indx
+	and x.ksppinm ='_high_priority_processes'
+	UNION All
+	select '#LogFiles' AS ConfigName, CAST(count(1) AS varchar2(50)) AS ConfigValue from gv$log
+	UNION All
+	select 'LogFiles_Size_MB' AS ConfigName, CAST((max(BYTES)/1024/1024) AS varchar2(50)) AS ConfigValue from gv$log 
 	`
 	stmt := go_ora.NewStmt(query, DB)
 	defer stmt.Close()
@@ -148,12 +158,15 @@ select 'LogFiles_Size_MB' AS ConfigName, CAST((max(BYTES)/1024/1024) AS varchar2
 
 	var odf orclGetBPSData
 	var sodf []orclGetBPSData
+	sgaSize := orclGetSGAOptimal(connStr)
 	for rows.Next_() {
 		err = rows.Scan(&odf.ConfigName, &odf.ConfigValue)
 		dieOnError("Can't scan", err)
 		switch odf.ConfigName {
-		case "SGA_Total_GB":
-			odf.OptimalValue = orclGetSGAOptimal(connStr)
+		case "sga_max_size_MB":
+			odf.OptimalValue = sgaSize
+		case "sga_target_MB":
+			odf.OptimalValue = sgaSize
 		case "_high_priority_processes":
 			odf.OptimalValue = "LMS*|VKTM|LGWR"
 		case "#LogFiles":

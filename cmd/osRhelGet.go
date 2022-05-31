@@ -37,8 +37,12 @@ Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
 		defer c.Close()
 
 		outFormat, _ := cmd.Flags().GetString("out")
+		disk, _ := cmd.Flags().GetBool("disk")
+		hpage, _ := cmd.Flags().GetBool("hpage")
+		bps, _ := cmd.Flags().GetBool("bps")
+
 		if workload == "sql" {
-			if tunedAdm {
+			if tunedAdm || bps {
 				fmt.Println("Tuned-Adm Settings:")
 				out1 := getTunedAdmSettingsSql(c)
 				if outFormat == "table" {
@@ -54,7 +58,23 @@ Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
 					util.WriteCsvReport(of1, string(b1))
 				}
 			}
-			if mssqlConf {
+			if disk || bps {
+				fmt.Println("MSSQL Disk related Settings:")
+				out3 := getMssqlDiskSettings(c)
+				if outFormat == "table" {
+					olog.Print(out3)
+				} else if outFormat == "json" {
+					fmt.Println(util.PrettyPrint(out3))
+				} else if outFormat == "csv" {
+					of3 := util.GetFilenameDate("os_rhel_mssql_disk_bps_Report", "csv")
+					b3, err := csvutil.Marshal(out3)
+					if err != nil {
+						fmt.Println("error:", err)
+					}
+					util.WriteCsvReport(of3, string(b3))
+				}
+			}
+			if mssqlConf || bps {
 				fmt.Println("MSSQL-Conf Settings:")
 				out2 := getMssqlConfSettings(c)
 				if outFormat == "table" {
@@ -70,14 +90,14 @@ Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
 					util.WriteCsvReport(of2, string(b2))
 				}
 			}
-			if !tunedAdm && !mssqlConf {
-				fmt.Println("no sub flag (--tunedadm or --msconf) provided")
+			if !tunedAdm && !mssqlConf && !disk && !bps {
+				fmt.Println("no sub flag (--bps or --tunedadm or --msconf or --disk) provided")
 				fmt.Println("use below instruction to see help and examples for this command")
-				fmt.Println("dso os rhel get --help")
+				fmt.Println("dso os rhel get -w sql --help")
 			}
 		}
-		if workload == "orcl" {
-			if tunedAdm {
+		if workload == "oracle" {
+			if tunedAdm || bps {
 				fmt.Println("Current Tuned-Adm Settings:")
 				out3 := getTunedAdmSettingsOrcl(c)
 				if outFormat == "table" {
@@ -92,21 +112,8 @@ Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
 					}
 					util.WriteCsvReport(of3, string(b3))
 				}
-			} else {
-				fmt.Println("Current Tuned-Adm Settings:")
-				out4 := getTunedAdmSettingsOrcl(c)
-				if outFormat == "table" {
-					olog.Print(out4)
-				} else if outFormat == "json" {
-					fmt.Println(util.PrettyPrint(out4))
-				} else if outFormat == "csv" {
-					of4 := util.GetFilenameDate("osTunedAdmSettingReport", "csv")
-					b4, err := csvutil.Marshal(out4)
-					if err != nil {
-						fmt.Println("error:", err)
-					}
-					util.WriteCsvReport(of4, string(b4))
-				}
+			}
+			if hpage || bps {
 				fmt.Println("Hugepage Settings:")
 				out5 := getHugePageDetails(c)
 				if outFormat == "table" {
@@ -138,6 +145,9 @@ func init() {
 	osRhelGetCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
 	osRhelGetCmd.Flags().Bool("tunedadm", false, "Get setting values for tuned-Adm profile")
 	osRhelGetCmd.Flags().Bool("msconf", false, "Get setting values for mssql-conf")
+	osRhelGetCmd.Flags().Bool("disk", false, "Get disk related best practice settings for mssql-conf")
+	osRhelGetCmd.Flags().Bool("hpage", false, "Get Hugepages settings for oracle workload")
+	osRhelGetCmd.Flags().Bool("bps", false, "Get all best practice settings for given workload on OS layer")
 	osRhelGetCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
@@ -401,6 +411,72 @@ print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}"
 		}
 	}
 
+	//olog.Print(osdata)
+	return osdata
+}
+
+type mssqlDiskSettings struct {
+	Settings      string `json:"Settings"`
+	RunningValues string `json:"RunningValues"`
+	OptimalValues string `json:"OptimalValues"`
+	Diff          string `json:"Diff"`
+}
+
+func getMssqlDiskSettings(client *ssh.Client) []mssqlDiskSettings {
+	cmd1 := `
+files=( $(find / \( -name "*.ldf" -o -name "*.mdf" -o -name "*.ndf"  \) -type f -print0 2>/dev/null |xargs -0))
+declare -A allDvc
+for (( i=0; i<${#files[@]}; i++ )); 
+do 
+	fileName=${files[i]} 
+	dev=$(df $fileName | awk '/^\/dev/ {print $1}')
+	if [[ $dev != "/dev/mapper/rhel-root" ]]; then
+		allDvs=$dev;
+	fi
+done
+declare -A uniqDvs
+for dvs in "${allDvs[@]}"; do
+	uniqDvs[$dvs]=0 
+done
+for dv in "${!uniqDvs[@]}"; do
+dskOpt=$dv"_diskMountOption"
+dskReadAhead=$dv"_diskReadAheadValue"
+uid=$(blkid ${dv} | awk '{print $2}'|sed 's/"//g')
+fileData=$(grep -hnr "$uid" /etc/fstab)
+echo $fileData | awk -v x=$dskOpt '{ print "{\"Settings\":\"" x "\",\"RunningValues\":\"" $4 "\",\"OptimalValues\":\"defaults,noatime\",\"Diff\":\"\"}" }'
+blockdev --getra $dv | awk -v y=$dskReadAhead '{ print "{\"Settings\":\"" y "\",\"RunningValues\":\"" $1 "\",\"OptimalValues\":\"4096\",\"Diff\":\"\"}" }'
+done
+	`
+	res, err := util.ExecCmd(client, cmd1)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println(res.String())
+	var osdata []mssqlDiskSettings
+	for _, m := range strings.Split(res.String(), "\n") {
+		var osd mssqlDiskSettings
+		if m != "" {
+			json.Unmarshal([]byte(m), &osd)
+			osdata = append(osdata, osd)
+		}
+	}
+	/*
+		for k := range osdata {
+			fmt.Println(k)
+			fmt.Println(osdata[k].RunningValues)
+			fmt.Println(osdata[k].OptimalValues)
+			if osdata[k].RunningValues == osdata[k].OptimalValues {
+				osdata[k].Diff = "*"
+			} else {
+				osdata[k].Diff = ""
+			}
+		}
+	*/
+	for k := range osdata {
+		if osdata[k].RunningValues != osdata[k].OptimalValues {
+			osdata[k].Diff = "*"
+		}
+	}
 	//olog.Print(osdata)
 	return osdata
 }

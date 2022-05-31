@@ -5,6 +5,7 @@ Copyright © 2022 Sanjeev Ranjan
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -21,7 +22,12 @@ var rootCmd = &cobra.Command{
 	`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+		chkVersion, _ := cmd.Flags().GetBool("version")
+		if chkVersion {
+			fmt.Println("DSO Version v0.9.6")
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -42,5 +48,6 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().BoolP("version", "v", false, "get current version of the dso")
 }

@@ -22,15 +22,22 @@ var osRhelSetCmd = &cobra.Command{
 	Short: "This set command with configure Dell Recomended best practice settings at RHEL operating system layer",
 	Long:  `This set command for RHEL sub-module will set Dell Recomended best practice values for SQL/Oracle solution on RHEL OS`,
 	Example: `
-Ex1:- dso os rhel set --tunedadm -I 10.0.0.1 -U user1 -P pass1                // set Tuned-Adm profile for SQL Server workload
-Ex2:- dso os rhel set -w sql --tunedadm -I 10.0.0.1 -U user1 -P pass1         // set Tuned-Adm profile for SQL Server workload
-Ex3:- dso os rhel set -w sql --msconf -I 10.0.0.1 -U user1 -P pass1           // set MSSQL-CONF best practice for SQL Server workload
-Ex4:- dso os rhel set --msconf -I 10.0.0.1 -U user1 -P pass1                  // set MSSQL-CONF best practice for SQL Server workload
-Ex5:- dso os rhel set --tunedadm --msconf-I 10.0.0.1 -U user1 -P pass1        // set both Tuned-Adm & MSSQL-CONF best practices for SQL Server workload
-Ex6:- dso os rhel set -w sql -A "memory.memorylimitmb=8192" -I 10.0.0.1 -U user1 -P pass1  // set SQL Server memory limit using mssql-conf
-Ex7:- dso os rhel set -A "memory.memorylimitmb=8192" -I 10.0.0.1 -U user1 -P pass1  // set SQL Server memory limit using mssql-conf
-Ex8:- dso os rhel set -w sql -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1 // set SQL Server traceflag
-Ex9:- dso os rhel set -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1        // set SQL Server traceflag
+Ex1:- // set Tuned-Adm profile for SQL Server workload
+dso os rhel set -w sql --tunedadm -I 10.0.0.1 -U user1 -P pass1                
+Ex2:- // set Tuned-Adm profile for SQL Server workload
+dso os rhel set -w sql --tunedadm -I 10.0.0.1 -U user1 -P pass1         
+Ex3:- // set MSSQL-CONF best practice for SQL Server workload
+dso os rhel set -w sql --msconf -I 10.0.0.1 -U user1 -P pass1           
+Ex4:- // set MSSQL-CONF best practice for SQL Server workload
+dso os rhel set -w sql --msconf -I 10.0.0.1 -U user1 -P pass1                  
+Ex5:- // set both Tuned-Adm & MSSQL-CONF best practices for SQL Server workload
+dso os rhel set --tunedadm --msconf-I 10.0.0.1 -U user1 -P pass1        
+Ex6:- // set SQL Server memory limit using mssql-conf
+dso os rhel set -w sql -A "memory.memorylimitmb=8192" -I 10.0.0.1 -U user1 -P pass1  
+Ex7:- // set SQL Server memory limit using mssql-conf
+dso os rhel set -A "memory.memorylimitmb=8192" -I 10.0.0.1 -U user1 -P pass1  
+Ex8:- // set SQL Server traceflag
+dso os rhel set -w sql -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := initOsRhelSetStep(cmd, args)
@@ -38,41 +45,64 @@ Ex9:- dso os rhel set -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1        //
 			panic(err)
 		}
 		defer c.Close()
+		force, _ := cmd.Flags().GetBool("force")
+		disk, _ := cmd.Flags().GetBool("disk")
+		bps, _ := cmd.Flags().GetBool("bps")
 		var usrCnf string = "n"
 		if workload == "sql" {
 			if attribute != "" {
 				att, val := parseAttribute(attribute)
-				fmt.Println("This action require SQL Server instance restart. Are you sure want to continue? (y/n): ")
-				fmt.Scanln(&usrCnf)
-				if strings.ToLower(usrCnf) == "y" {
-					setAttrSetting(c, att, val)
-					restartSQL(c)
-				}
-			} else {
-				if tunedAdm {
-					fmt.Println("This action will change kernel parameters. Are you sure want to continue? (y/n): ")
-					fmt.Scanln(&usrCnf)
-					if strings.ToLower(usrCnf) == "y" {
-						setTunedAdmSettingsSql(c)
-					}
-				}
-				if mssqlConf {
+				if !force {
 					fmt.Println("This action require SQL Server instance restart. Are you sure want to continue? (y/n): ")
 					fmt.Scanln(&usrCnf)
 					if strings.ToLower(usrCnf) == "y" {
+						setAttrSetting(c, att, val)
+						restartSQL(c)
+					}
+				} else {
+					setAttrSetting(c, att, val)
+					fmt.Println("Restarting SQL Server instance... ")
+					restartSQL(c)
+				}
+			} else {
+				if tunedAdm || bps {
+					if !force {
+						fmt.Println("This action will change kernel parameters. Are you sure want to continue? (y/n): ")
+						fmt.Scanln(&usrCnf)
+						if strings.ToLower(usrCnf) == "y" {
+							setTunedAdmSettingsSql(c)
+						}
+					} else {
+						setTunedAdmSettingsSql(c)
+					}
+				}
+				if disk || bps {
+					fmt.Println("Setting disk related best practices for SQL Server workload ")
+					setMssqlDiskSettings(c)
+				}
+				if mssqlConf || bps {
+					if !force {
+						fmt.Println("This action require SQL Server instance restart. Are you sure want to continue? (y/n): ")
+						fmt.Scanln(&usrCnf)
+						if strings.ToLower(usrCnf) == "y" {
+							setMsConfigSettings(c)
+							fmt.Println("Restarting SQL Server instance... ")
+							restartSQL(c)
+						}
+					} else {
 						setMsConfigSettings(c)
 						fmt.Println("Restarting SQL Server instance... ")
 						restartSQL(c)
 					}
 				}
-				if !tunedAdm && !mssqlConf {
-					fmt.Println("no sub flag (--tunedadm or --msconf) provided")
+				if !tunedAdm && !disk && !mssqlConf && !bps {
+					fmt.Println("no sub flag (--bps or --tunedadm or --disk or --msconf) provided")
 					fmt.Println("use below instruction to see help and examples for this command")
-					fmt.Println("dso os rhel set --help")
+					fmt.Println("dso os rhel -w sql set --help")
 				}
 			}
 		}
-		if workload == "orcl" {
+		if workload == "oracle" {
 			if attribute != "" {
 				att, val := parseAttribute(attribute)
 				if att == "hugepages" {
@@ -90,9 +120,13 @@ Ex9:- dso os rhel set -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1        //
 				}
 			} else {
 				if tunedAdm {
-					fmt.Println("This action will change kernel parameters. Are you sure want to continue? (y/n): ")
-					fmt.Scanln(&usrCnf)
-					if strings.ToLower(usrCnf) == "y" {
+					if !force {
+						fmt.Println("This action will change kernel parameters. Are you sure want to continue? (y/n): ")
+						fmt.Scanln(&usrCnf)
+						if strings.ToLower(usrCnf) == "y" {
+							setTunedAdmSettingsOrcl(c)
+						}
+					} else {
 						setTunedAdmSettingsOrcl(c)
 					}
 				}
@@ -109,9 +143,12 @@ func init() {
 	osRhelSetCmd.Flags().StringP("portSSH", "p", "22", "SSH port for connecting to RHEL os")
 	osRhelSetCmd.Flags().StringP("user", "U", "", "Username for the RHEL operating system")
 	osRhelSetCmd.Flags().StringP("pass", "P", "", "Password for the RHEL operating system")
-	osRhelSetCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
+	osRhelSetCmd.Flags().StringP("workload", "w", "", "Application workload [sql/oracle]")
 	osRhelSetCmd.Flags().Bool("tunedadm", false, "Set settings for optimal tuned-Adm profile")
 	osRhelSetCmd.Flags().Bool("msconf", false, "Set setting for optimal mssql-conf")
+	osRhelSetCmd.Flags().Bool("disk", false, "Set disk related best practice for sql server workload on OS layer")
+	osRhelSetCmd.Flags().Bool("bps", false, "Set all best practices for given workload on OS layer")
+	osRhelSetCmd.Flags().Bool("force", false, "force apply settings. Do not wait for user confirmation")
 	osRhelSetCmd.Flags().StringP("attr", "A", "", "Set individual attributes for mssql-conf(ex: -A \"memory.memorylimitmb=8192\") see help for more info.")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
@@ -119,6 +156,7 @@ func init() {
 	//osRhelSetCmd.MarkFlagRequired("ip")
 	//osRhelSetCmd.MarkFlagRequired("user")
 	//osRhelSetCmd.MarkFlagRequired("pass")
+	osRhelSetCmd.MarkFlagRequired("workload")
 }
 
 func parseAttribute(str string) (attr, val string) {
@@ -339,15 +377,38 @@ func setMsConfigSettings(client *ssh.Client) {
 	if err != nil {
 		panic(err)
 	}
-	//fmt.Println(res.String())
-	//time.Sleep(2 * time.Second)
-
-	//cmd2 := `systemctl restart mssql-server.service`
-	//_, err = util.ExecCmd(client, cmd2)
-	//if err != nil {
-	//	panic(err)
-	//}
 	fmt.Println("mssql-conf changes applied successfully... ")
+}
+
+func setMssqlDiskSettings(client *ssh.Client) {
+	cmd1 := `
+files=( $(find / \( -name "*.ldf" -o -name "*.mdf" -o -name "*.ndf"  \) -type f -print0 2>/dev/null |xargs -0))
+declare -A allDvc
+for (( i=0; i<${#files[@]}; i++ )); 
+do 
+	fileName=${files[i]} 
+	dev=$(df $fileName | awk '/^\/dev/ {print $1}')
+	if [[ $dev != "/dev/mapper/rhel-root" ]]; then
+		allDvs=$dev;
+	fi
+done
+declare -A uniqDvs
+for dvs in "${allDvs[@]}"; do
+	uniqDvs[$dvs]=0 
+done
+for dv in "${!uniqDvs[@]}"; do
+uid=$(blkid ${dv} | awk '{print $2}'|sed 's/"//g')
+fileData=$(grep -hnr "$uid" /etc/fstab | awk '{ print  $4  }')
+NEW="defaults,noatime"
+sed -i "/^$uid/s/$fileData/$NEW/g" /etc/fstab
+blockdev --setra 4096 $dv
+done	
+	`
+	_, err := util.ExecCmd(client, cmd1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Disk best practices applied successfully... ")
 }
 
 func getHugepagesRecomendValue(client *ssh.Client) string {

@@ -24,10 +24,14 @@ var osRhelGetCmd = &cobra.Command{
 	Short: "This get command will pull best practice settings for RHEL OS",
 	Long:  `This get command will pull best practice specific settings from the RHEL operating system within your solution`,
 	Example: `
-Ex1: dso os rhel get --tunedadm -I 10.0.0.1 -U user1 
-Ex2: dso os rhel get --tunedadm -I 10.0.0.1 -U user1 -P pass1
-Ex3: dso os rhel get --msconf -I 10.0.0.1 -U user1 
-Ex4: dso os rhel get --msconf --tunedadm -I 10.0.0.1 -U user1
+Ex1: dso os rhel get -w oracle --bps -I 10.0.0.1 -U user1 
+Ex2: dso os rhel get -w oracle --tunedadm -I 10.0.0.1 -U user1 -P pass1
+Ex3: dso os rhel get -w oracle --hpage -I 10.0.0.1 -U user1 -P pass1
+Ex4: dso os rhel get -w sql --bps -I 10.0.0.1 -U user1 
+Ex5: dso os rhel get -w sql --tunedadm -I 10.0.0.1 -U user1 
+Ex6: dso os rhel get -w sql --disk -I 10.0.0.1 -U user1 
+Ex7: dso os rhel get -w sql --msconf -I 10.0.0.1 -U user1 
+Ex8: dso os rhel get -w sql --msconf --tunedadm -I 10.0.0.1 -U user1
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := initOsRhelGetStep(cmd, args)
@@ -142,7 +146,7 @@ func init() {
 	osRhelGetCmd.Flags().StringP("portSSH", "p", "22", "SSH port for connecting to RHEL os")
 	osRhelGetCmd.Flags().StringP("user", "U", "", "Username for the RHEL operating system")
 	osRhelGetCmd.Flags().StringP("pass", "P", "", "Password for the RHEL operating system")
-	osRhelGetCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
+	osRhelGetCmd.Flags().StringP("workload", "w", "", "Application workload [sql/oracle]")
 	osRhelGetCmd.Flags().Bool("tunedadm", false, "Get setting values for tuned-Adm profile")
 	osRhelGetCmd.Flags().Bool("msconf", false, "Get setting values for mssql-conf")
 	osRhelGetCmd.Flags().Bool("disk", false, "Get disk related best practice settings for mssql-conf")
@@ -154,6 +158,7 @@ func init() {
 	//osRhelGetCmd.MarkFlagRequired("ip")
 	//osRhelGetCmd.MarkFlagRequired("user")
 	//osRhelGetCmd.MarkFlagRequired("pass")
+	osRhelGetCmd.MarkFlagRequired("workload")
 }
 
 type displaySettings struct {

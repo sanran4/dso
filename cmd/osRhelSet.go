@@ -21,24 +21,6 @@ var osRhelSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "This set command with configure Dell Recomended best practice settings at RHEL operating system layer",
 	Long:  `This set command for RHEL sub-module will set Dell Recomended best practice values for SQL/Oracle solution on RHEL OS`,
-	Example: `
-Ex1:- // set Tuned-Adm profile for SQL Server workload
-dso os rhel set -w sql --tunedadm -I 10.0.0.1 -U user1 -P pass1                
-Ex2:- // set Tuned-Adm profile for SQL Server workload
-dso os rhel set -w sql --tunedadm -I 10.0.0.1 -U user1 -P pass1         
-Ex3:- // set MSSQL-CONF best practice for SQL Server workload
-dso os rhel set -w sql --msconf -I 10.0.0.1 -U user1 -P pass1           
-Ex4:- // set MSSQL-CONF best practice for SQL Server workload
-dso os rhel set -w sql --msconf -I 10.0.0.1 -U user1 -P pass1                  
-Ex5:- // set both Tuned-Adm & MSSQL-CONF best practices for SQL Server workload
-dso os rhel set --tunedadm --msconf-I 10.0.0.1 -U user1 -P pass1        
-Ex6:- // set SQL Server memory limit using mssql-conf
-dso os rhel set -w sql -A "memory.memorylimitmb=8192" -I 10.0.0.1 -U user1 -P pass1  
-Ex7:- // set SQL Server memory limit using mssql-conf
-dso os rhel set -A "memory.memorylimitmb=8192" -I 10.0.0.1 -U user1 -P pass1  
-Ex8:- // set SQL Server traceflag
-dso os rhel set -w sql -A "traceflag=834" -I 10.0.0.1 -U user1 -P pass1 
-`,
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := initOsRhelSetStep(cmd, args)
 		if err != nil {

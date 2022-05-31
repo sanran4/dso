@@ -16,11 +16,6 @@ var dbSqlSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "This set command will configure Dell Recomended bast practice settings to SQL Server",
 	Long:  `This set command will configure Dell Recomended bast practice settings to SQL Server`,
-	Example: `
-EX1: dso db sql set -I 10.0.0.1 -U user1 
-EX2: dso db sql set -I 10.0.0.1 -U user1 -P pass1
-EX3: dso db sql set --instance=10.0.0.1 --user=user1 --pass=pass1
-`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		server, ok := os.LookupEnv("SQL_DB_HOST")
@@ -52,30 +47,27 @@ EX3: dso db sql set --instance=10.0.0.1 --user=user1 --pass=pass1
 
 		connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", server, user, pass, port)
 
-		if bpsFlag {
-			sqlsetDAC(connString)
+		if affinity || bpsFlag {
 			sqlSetAffinityMask(connString)
-			sqlSetSqlMemory(connString)
-			sqlSetFileAutoGrowth(connString)
-			sqlSetQueryOptimizerHotFixes(connString)
-			fmt.Println("Applied all SQL best practice configurations")
-		} else {
-			if affinity {
-				sqlSetAffinityMask(connString)
-			}
-			if sqlmem {
-				sqlSetSqlMemory(connString)
-			}
-			if autogrowth {
-				sqlSetFileAutoGrowth(connString)
-			}
-			if qohf {
-				sqlSetQueryOptimizerHotFixes(connString)
-			}
-			if dac {
-				sqlsetDAC(connString)
-			}
+			fmt.Println("applied Affinity mask as per best practice..")
 		}
+		if sqlmem || bpsFlag {
+			sqlSetSqlMemory(connString)
+			fmt.Println("applied Min and Max memory settings as per best practice..")
+		}
+		if autogrowth || bpsFlag {
+			sqlSetFileAutoGrowth(connString)
+			fmt.Println("applied File auto-growth as per best practice..")
+		}
+		if qohf || bpsFlag {
+			sqlSetQueryOptimizerHotFixes(connString)
+			fmt.Println("applied Query Optimizer HotFixes as per best practice..")
+		}
+		if dac || bpsFlag {
+			sqlsetDAC(connString)
+			fmt.Println("applied Dedicated remote admin connection as per best practice..")
+		}
+
 	},
 }
 

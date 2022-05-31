@@ -5,8 +5,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +13,7 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "This server module will work with physical server layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing sub-module. please see help using below command:")
-		fmt.Println("dso server -h")
-		fmt.Println("dso server --help")
-		fmt.Println("dso help server")
+		cmd.Help()
 	},
 }
 

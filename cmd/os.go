@@ -5,8 +5,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +13,7 @@ var osCmd = &cobra.Command{
 	Use:   "os",
 	Short: "This module os will Work with operating system layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing sub-module. please see help using below command:")
-		fmt.Println("dso os -h")
-		fmt.Println("dso os --help")
-		fmt.Println("dso help os")
+		cmd.Help()
 	},
 }
 

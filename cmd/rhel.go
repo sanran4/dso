@@ -5,8 +5,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +13,7 @@ var rhelCmd = &cobra.Command{
 	Use:   "rhel",
 	Short: "This rhel module will Work with RHEL (Redhat Enterprise Linux) layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing command. please see help using below command:")
-		fmt.Println("dso os rhel -h")
-		fmt.Println("dso os rhel --help")
-		fmt.Println("dso help os rhel")
+		cmd.Help()
 	},
 }
 

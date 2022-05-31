@@ -5,8 +5,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +13,7 @@ var hypervCmd = &cobra.Command{
 	Use:   "hyperv",
 	Short: "This hyperv sub-module will Work with Microsoft Hyper-V layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing command. please see help using below command:")
-		fmt.Println("dso virtual hyperv -h")
-		fmt.Println("dso virtual hyperv --help")
-		fmt.Println("dso help virtual hyperv")
+		cmd.Help()
 	},
 }
 

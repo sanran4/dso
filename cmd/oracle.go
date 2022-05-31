@@ -5,8 +5,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +13,7 @@ var oracleCmd = &cobra.Command{
 	Use:   "oracle",
 	Short: "This sub-module oracle will Work with Oracle database layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Missing command. please see help using below command:")
-		fmt.Println("dso db oracle -h")
-		fmt.Println("dso db oracle --help")
-		fmt.Println("dso help db oracle")
+		cmd.Help()
 	},
 }
 

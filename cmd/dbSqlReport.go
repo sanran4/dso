@@ -18,11 +18,6 @@ var dbSqlReportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "This report command will pull report from SQL Server",
 	Long:  `This report command will pull report from SQL Server`,
-	Example: `
-EX1: dso db sql report -I 10.0.0.1 -U user1 
-EX2: dso db sql report -I 10.0.0.1 -U user1 -P pass1 
-EX3: dso db sql report --instance=10.0.0.1 --user=user1 --pass=pass1
-`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		server, ok := os.LookupEnv("SQL_DB_HOST")

@@ -133,7 +133,6 @@ func init() {
 	dbOrclRptCmd.Flags().StringP("instance", "I", "", "oracle db server name/IP address")
 	dbOrclRptCmd.Flags().Int("port", 1521, "oracle db port")
 	dbOrclRptCmd.Flags().String("svc", "", "oracle service name")
-	//dbOrclRptCmd.Flags().StringP("type", "t", "", "Report type to be fetched")
 	dbOrclRptCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//dbOrclRptCmd.MarkFlagRequired("server")
@@ -177,9 +176,9 @@ func dieOnError(msg string, err error) {
 
 type orclDataFile struct {
 	//Id   int64  `db:"name:visit_id"`
-	FileName    string `db:"name:FILE_NAME"`
-	TableSpace  string `db:"name:TABLESPACE_NAME"`
-	SizeInMB string `db:"name:SizeInMb"`
+	FileName   string `db:"name:FILE_NAME"`
+	TableSpace string `db:"name:TABLESPACE_NAME"`
+	SizeInMB   string `db:"name:SizeInMb"`
 	//Date time.Time	`db:"name:visit_date"`
 }
 type orclLogFile struct {

@@ -12,8 +12,8 @@ import (
 )
 
 var dbOrclSetCmd = &cobra.Command{
-	Use:   "set",
-	Short: "This set command will Work for changing oracle database layer settings",
+	Use:          "set",
+	Short:        "This set command will apply best practices settings at oracle database layer",
 	Run: func(cmd *cobra.Command, args []string) {
 		srv, usr, pas, svc, prt := parseDbOrclSetFlags(cmd, args)
 		connString := fmt.Sprintf("oracle://%s:%s@%s:%d/%s", usr, pas, srv, prt, svc)
@@ -72,12 +72,12 @@ func init() {
 
 	dbOrclSetCmd.Flags().StringP("user", "U", "", "Username to connect to oracle instance")
 	dbOrclSetCmd.Flags().StringP("pass", "P", "", "Password to connect to oracle instance")
-	dbOrclSetCmd.Flags().StringP("instance", "I", "", "oracle db server name/IP address")
-	dbOrclSetCmd.Flags().Int("port", 1521, "oracle db port")
-	dbOrclSetCmd.Flags().String("svc", "", "oracle service name")
+	dbOrclSetCmd.Flags().StringP("instance", "I", "", "oracle db server IP address")
+	dbOrclSetCmd.Flags().Int("port", 1521, "oracle db litioning port")
+	dbOrclSetCmd.Flags().String("svc", "", "oracle db service name")
 	dbOrclSetCmd.Flags().StringP("attr", "A", "", "Set individual attributes for oracle database")
-	dbOrclSetCmd.Flags().Bool("bps", false, "Set Oracle all best practices at once")
-	dbOrclSetCmd.Flags().Bool("hpprocess", false, "Set High Priority Process for Oracle database")
+	dbOrclSetCmd.Flags().Bool("bps", false, "Set all best practices for Oracle database instance at once")
+	dbOrclSetCmd.Flags().Bool("hpprocess", false, "Set High Priority Process for Oracle database instance ")
 	dbOrclSetCmd.Flags().Bool("sgaMax", false, "Set sga_max_size for Oracle database instance")
 	dbOrclSetCmd.Flags().Bool("sgaTarget", false, "Set sga_target for Oracle database instance")
 	dbOrclSetCmd.Flags().Bool("log", false, "Set best practice for log file in Oracle database")

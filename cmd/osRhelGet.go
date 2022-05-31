@@ -23,16 +23,6 @@ var osRhelGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "This get command will pull best practice settings for RHEL OS",
 	Long:  `This get command will pull best practice specific settings from the RHEL operating system within your solution`,
-	Example: `
-Ex1: dso os rhel get -w oracle --bps -I 10.0.0.1 -U user1 
-Ex2: dso os rhel get -w oracle --tunedadm -I 10.0.0.1 -U user1 -P pass1
-Ex3: dso os rhel get -w oracle --hpage -I 10.0.0.1 -U user1 -P pass1
-Ex4: dso os rhel get -w sql --bps -I 10.0.0.1 -U user1 
-Ex5: dso os rhel get -w sql --tunedadm -I 10.0.0.1 -U user1 
-Ex6: dso os rhel get -w sql --disk -I 10.0.0.1 -U user1 
-Ex7: dso os rhel get -w sql --msconf -I 10.0.0.1 -U user1 
-Ex8: dso os rhel get -w sql --msconf --tunedadm -I 10.0.0.1 -U user1
-`,
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := initOsRhelGetStep(cmd, args)
 		if err != nil {

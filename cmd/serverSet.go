@@ -39,7 +39,7 @@ EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
 		bpsFlag, _ := cmd.Flags().GetBool("bps")
 		idracIP, user, pass, srvSetAttr, srvSetBios, srvJobConfig, rbtSrv := initSrvSet(cmd, args)
 		fmt.Println(srvSetAttr)
-		var job_id string
+		//var job_id string
 		if srvSetBios {
 			if bpsFlag {
 				srvSetBiosData(idracIP, user, pass, "WorkloadProfile", "DbOptimizedProfile")
@@ -51,7 +51,7 @@ EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
 				srvSetBiosData(idracIP, user, pass, "SerialComm", "Off")
 				srvSetBiosData(idracIP, user, pass, "UsbPorts", "AllOff")
 				srvSetBiosData(idracIP, user, pass, "UsbManagedPort", "Off")
-				job_id = srvCreateBiosConfigJob(idracIP, user, pass)
+				job_id := srvCreateBiosConfigJob(idracIP, user, pass)
 				fmt.Println(job_id)
 				time.Sleep(10 * time.Second)
 				srvRebootServer(idracIP, user, pass)
@@ -59,18 +59,20 @@ EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
 			} else if srvSetAttr != "" {
 				attName, attValue := srvSetParseAttr(srvSetAttr)
 				srvSetBiosData(idracIP, user, pass, attName, attValue)
-				job_id = srvCreateBiosConfigJob(idracIP, user, pass)
+				job_id := srvCreateBiosConfigJob(idracIP, user, pass)
 				fmt.Println(job_id)
 				time.Sleep(10 * time.Second)
+				srvRebootServer(idracIP, user, pass)
+				srvLoopJobStatus(idracIP, user, pass, job_id)
 			}
 		}
 		if srvJobConfig {
 			srvCreateBiosConfigJob(idracIP, user, pass)
 		}
 
-		srvJobStatus, _ := cmd.Flags().GetString("jobStatus")
-		if srvJobStatus != "" {
-			srvLoopJobStatus(idracIP, user, pass, srvJobStatus)
+		job_id, _ := cmd.Flags().GetString("jobStatus")
+		if job_id != "" {
+			srvLoopJobStatus(idracIP, user, pass, job_id)
 		}
 		if rbtSrv {
 			srvRebootServer(idracIP, user, pass)
@@ -91,7 +93,7 @@ func init() {
 	serverSetCmd.Flags().Bool("bps", false, "set all best practice on server iDRAC")
 	serverSetCmd.Flags().StringP("attr", "A", "", "Attribute/s to be set on server layer")
 	serverSetCmd.Flags().Bool("jobcfg", false, "Work with bios job cofig server iDRAC")
-	serverSetCmd.Flags().StringP("jobStatus", "j", "", "Check BIOS Job Status")
+	serverSetCmd.Flags().StringP("jobStatus", "j", "", "Check BIOS Job Status in loop based on job_id")
 	serverSetCmd.Flags().Bool("reboot", false, "Reboot server using iDRAC")
 	serverSetCmd.Flags().Bool("test", false, "test individual function")
 
@@ -132,7 +134,6 @@ func srvSetParseAttr(str string) (attr, val string) {
 }
 
 func srvSetBiosData(idracIP, user, pass, aName, aValue string) {
-
 	// TODO: This is insecure; use only in dev environments.
 	tr := &http.Transport{
 		Dial: (&net.Dialer{
@@ -235,7 +236,7 @@ type srvJobStatus struct {
 	Message  string `json:"Message"`
 }
 
-// Function to Reboot Server through iDRAC
+// Function to check job status
 func srvLoopJobStatus(idracIP, user, pass, jobId string) {
 
 	iterateCnt := 30

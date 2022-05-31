@@ -30,14 +30,11 @@ var serverGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "This get command will pull best practice settings for server layer of the solution",
 	Long:  `This get command will pull best practice settings for Intel based server layer of the solution`,
-	Example: `
-EX1: dso server get --bios -I 10.0.0.1 -U user1 -P pass1
-EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
-`,
 	Run: func(cmd *cobra.Command, args []string) {
 		idracIP, user, pass := initSrvGet(cmd, args)
 		srvGetBios, _ = cmd.Flags().GetBool("bios")
 		outFormat, _ := cmd.Flags().GetString("out")
+		job_id, _ := cmd.Flags().GetString("jobStatus")
 		var baseURL string
 		if srvGetBios {
 			baseURL = "https://" + idracIP + "/redfish/v1/Systems/System.Embedded.1/Bios"
@@ -54,6 +51,10 @@ EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
 				}
 				util.WriteCsvReport(of1, string(b1))
 			}
+		} else if job_id != "" {
+			srvGetJobStatus(idracIP, user, pass, job_id)
+		} else {
+			cmd.Help()
 		}
 	},
 }
@@ -66,7 +67,8 @@ func init() {
 	serverGetCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
 	serverGetCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
 	serverGetCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
-	serverGetCmd.Flags().Bool("bios", false, "Get setting values for tuned-Adm profile")
+	serverGetCmd.Flags().Bool("bios", false, "validate bios best practices for intel based server")
+	serverGetCmd.Flags().StringP("jobStatus", "j", "", "Check BIOS Job Status based on job_id")
 	serverGetCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
@@ -221,4 +223,55 @@ func initSrvGet(cmd *cobra.Command, args []string) (ip, usr, pas string) {
 		}
 	}
 	return idracIP, user, pass
+}
+
+// Function to check job status
+func srvGetJobStatus(idracIP, user, pass, jobId string) {
+	// TODO: This is insecure; use only in dev environments.
+	tr := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: 10 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 10 * time.Second,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+	}
+	//client := &http.Client{Transport: tr}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   time.Second * 30,
+	}
+
+	jobUrl := "https://" + idracIP + "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/" + jobId
+	req, err := http.NewRequest("GET", jobUrl, nil)
+	if err != nil {
+		log.Printf("error creating GET request %v", err)
+		os.Exit(1)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json;charset=utf-8")
+	req.Header.Add("Cache-Control", "no-cache")
+	req.SetBasicAuth(user, pass)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("error requesting data %v", err)
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+	rb, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Could not read response body. %v", err)
+		os.Exit(1)
+	}
+	if resp.StatusCode != 200 {
+		fmt.Printf("Failed to get job status, errror is %s\n", resp.Status)
+		fmt.Println(string(rb))
+		os.Exit(1)
+	}
+	var sjs srvJobStatus
+	if err := json.Unmarshal(rb, &sjs); err != nil {
+		log.Printf("Could not unmarshal srvJobStatus. %v", err)
+	}
+
+	jobStaus := sjs.JobState
+	fmt.Printf("Job Status : %s\n", jobStaus)
 }

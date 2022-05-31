@@ -19,11 +19,6 @@ var osRhelReportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "This report command will pull general report for the RHEL OS",
 	Long:  `This report command will pull general report from the RHEL operating system within your solution`,
-	Example: `
-Ex1: dso os rhel report -I 10.0.0.1 -U user1 -P pass1
-Ex2: dso os rhel report -I 10.0.0.1 -U user1
-Ex3: dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1
-`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client, err := InitialSetup(cmd, args)
 		if err != nil {
@@ -34,14 +29,19 @@ Ex3: dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1
 		if workload == "sql" {
 			output1 := getSysctlConfigSql(client)
 			output2 := getMssqlConfSettingsReport(client)
+			output3 := getMssqlDiskSettingsReport(client)
 			if outFormat == "table" {
 				fmt.Println("OS kernal settings")
 				olog.Print(output1)
+				fmt.Println("Disk settings")
+				olog.Print(output3)
 				fmt.Println("SQL Server config settings")
 				olog.Print(output2)
 			} else if outFormat == "json" {
 				fmt.Println("OS kernal settings")
 				fmt.Println(util.PrettyPrint(output1))
+				fmt.Println("Disk settings")
+				fmt.Println(util.PrettyPrint(output3))
 				fmt.Println("SQL Server config settings")
 				fmt.Println(util.PrettyPrint(output2))
 			} else if outFormat == "csv" {
@@ -51,6 +51,12 @@ Ex3: dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1
 					fmt.Println("error:", err)
 				}
 				util.WriteCsvReport(outputFile1, string(b1))
+				outputFile3 := util.GetFilenameDate("sqlServerDiskSettingReport", "csv")
+				b3, err := csvutil.Marshal(output3)
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+				util.WriteCsvReport(outputFile3, string(b3))
 				outputFile2 := util.GetFilenameDate("sqlServerConfigReport", "csv")
 				b2, err := csvutil.Marshal(output2)
 				if err != nil {
@@ -60,21 +66,32 @@ Ex3: dso os rhel report --ip=10.0.0.1 --user=user1 --pass=pass1
 			}
 
 		}
-		if workload == "orcl" {
+		if workload == "oracle" {
 			output1 := getSysctlConfigOrcl(client)
+			output2 := getHugePageDetailsReport(client)
 			if outFormat == "table" {
 				fmt.Println("OS kernal settings")
 				olog.Print(output1)
+				fmt.Println("HugePages settings")
+				olog.Print(output2)
 			} else if outFormat == "json" {
 				fmt.Println("OS kernal settings")
 				fmt.Println(util.PrettyPrint(output1))
+				fmt.Println("HugePages settings")
+				fmt.Println(util.PrettyPrint(output2))
 			} else if outFormat == "csv" {
-				outputFile := util.GetFilenameDate("osKernalSettingReport", "csv")
-				b, err := csvutil.Marshal(output1)
+				outputFile1 := util.GetFilenameDate("osKernalSettingReport", "csv")
+				b1, err := csvutil.Marshal(output1)
 				if err != nil {
 					fmt.Println("error:", err)
 				}
-				util.WriteCsvReport(outputFile, string(b))
+				util.WriteCsvReport(outputFile1, string(b1))
+				outputFile2 := util.GetFilenameDate("hugePagesSettingReport", "csv")
+				b2, err := csvutil.Marshal(output2)
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+				util.WriteCsvReport(outputFile2, string(b2))
 			}
 		}
 
@@ -90,13 +107,14 @@ func init() {
 	osRhelReportCmd.Flags().StringP("portSSH", "p", "22", "SSH port for connecting to RHEL os")
 	osRhelReportCmd.Flags().StringP("user", "U", "", "Username for the RHEL operating system")
 	osRhelReportCmd.Flags().StringP("pass", "P", "", "Password for the RHEL operating system")
-	osRhelReportCmd.Flags().StringP("workload", "w", "sql", "Application workload [sql/orcl]")
+	osRhelReportCmd.Flags().StringP("workload", "w", "", "Application workload [sql/orcl]")
 	osRhelReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required
 	//osRhelReportCmd.MarkFlagRequired("ip")
 	//osRhelReportCmd.MarkFlagRequired("user")
 	//osRhelReportCmd.MarkFlagRequired("pass")
+	osRhelReportCmd.MarkFlagRequired("workload")
 }
 
 func execCmd(client *ssh.Client, query string) (bytes.Buffer, error) {
@@ -249,4 +267,62 @@ print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}"
 
 	//olog.Print(osdata)
 	return osdata
+}
+
+func getMssqlDiskSettingsReport(client *ssh.Client) []OsSetting {
+	cmd1 := `
+files=( $(find / \( -name "*.ldf" -o -name "*.mdf" -o -name "*.ndf"  \) -type f -print0 2>/dev/null |xargs -0))
+declare -A allDvc
+for (( i=0; i<${#files[@]}; i++ )); 
+do 
+	fileName=${files[i]} 
+	dev=$(df $fileName | awk '/^\/dev/ {print $1}')
+	if [[ $dev != "/dev/mapper/rhel-root" ]]; then
+		allDvs=$dev;
+	fi
+done
+declare -A uniqDvs
+for dvs in "${allDvs[@]}"; do
+	uniqDvs[$dvs]=0 
+done
+for dv in "${!uniqDvs[@]}"; do
+dskOpt=$dv"_diskMountOption"
+dskReadAhead=$dv"_diskReadAheadValue"
+uid=$(blkid ${dv} | awk '{print $2}'|sed 's/"//g')
+fileData=$(grep -hnr "$uid" /etc/fstab)
+echo $fileData | awk -v x=$dskOpt '{ print "{\"Settings\":\"" x "\",\"RunningValues\":\"" $4 "\"}" }'
+blockdev --getra $dv | awk -v y=$dskReadAhead '{ print "{\"Settings\":\"" y "\",\"RunningValues\":\"" $1 "\"}" }'
+done
+	`
+	res, err := util.ExecCmd(client, cmd1)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println(res.String())
+	var osdata []OsSetting
+	for _, m := range strings.Split(res.String(), "\n") {
+		var osd OsSetting
+		if m != "" {
+			json.Unmarshal([]byte(m), &osd)
+			osdata = append(osdata, osd)
+		}
+	}
+	//olog.Print(osdata)
+	return osdata
+}
+
+func getHugePageDetailsReport(client *ssh.Client) []OsSetting {
+	var settingSlice []OsSetting
+	cmd1 := "a=$(grep Hugepagesize /proc/meminfo | awk {'print $2'}) && echo $a"
+	res1, err := execCmd(client, cmd1)
+	if err != nil {
+		panic(err)
+	}
+	var setting OsSetting
+	setting.Settings = "vm.nr_hugepages"
+	setting.RunningValues = strings.Trim(res1.String(), "\n")
+	settingSlice = append(settingSlice, setting)
+	//fmt.Println(setting)
+	//olog.Print(settingSlice)
+	return settingSlice
 }

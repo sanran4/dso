@@ -15,13 +15,6 @@ import (
 var dbOrclGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "This get command will Work for fetching best practice settings from oracle database layer ",
-	Example: `
-EX1: dso db oracle get -I 10.0.0.1 -U user1 
-EX2: dso db oracle get -I 10.0.0.1 -U user1 -P pass1
-EX3: dso db oracle get -I 10.0.0.1 -U user1 -P pass1 -o json
-EX4: dso db oracle get -I 10.0.0.1 -U user1 -P pass1 -o csv
-EX5: dso db oracle get --instance=10.0.0.1 --user=user1 --pass=pass1
-`,
 	Run: func(cmd *cobra.Command, args []string) {
 		srv, usr, pas, svc, prt := parseDbOrclGetFlags(cmd, args)
 		outFormat, _ := cmd.Flags().GetString("out")

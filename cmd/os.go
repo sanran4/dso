@@ -11,7 +11,7 @@ import (
 // osCmd represents the os command
 var osCmd = &cobra.Command{
 	Use:   "os",
-	Short: "This module os will Work with operating system layer of the solution",
+	Short: "os module provides different sub-modules to Work with operating system layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

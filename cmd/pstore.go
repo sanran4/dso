@@ -11,7 +11,7 @@ import (
 // pstoreCmd represents the pstore command
 var pstoreCmd = &cobra.Command{
 	Use:   "pstore",
-	Short: "This pstore sub-module will Work with DellEMC PowerStore storage layer of the solution",
+	Short: "This pstore sub-module under storage module provides different commands to work with DellEMC PowerStore storage",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

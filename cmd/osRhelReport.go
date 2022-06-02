@@ -17,8 +17,7 @@ import (
 
 var osRhelReportCmd = &cobra.Command{
 	Use:   "report",
-	Short: "This report command will pull general report for the RHEL OS",
-	Long:  `This report command will pull general report from the RHEL operating system within your solution`,
+	Short: "This report command will pull report from the RHEL operating system",
 	Run: func(cmd *cobra.Command, args []string) {
 		client, err := InitialSetup(cmd, args)
 		if err != nil {

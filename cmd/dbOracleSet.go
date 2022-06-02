@@ -12,8 +12,8 @@ import (
 )
 
 var dbOrclSetCmd = &cobra.Command{
-	Use:          "set",
-	Short:        "This set command will apply best practices settings at oracle database layer",
+	Use:   "set",
+	Short: "This set command will apply best practices settings to oracle database layer",
 	Run: func(cmd *cobra.Command, args []string) {
 		srv, usr, pas, svc, prt := parseDbOrclSetFlags(cmd, args)
 		connString := fmt.Sprintf("oracle://%s:%s@%s:%d/%s", usr, pas, srv, prt, svc)

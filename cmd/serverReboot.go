@@ -17,8 +17,7 @@ import (
 
 var serverRebootCmd = &cobra.Command{
 	Use:   "reboot",
-	Short: "This reboot command will reboot physical server layer of the solution using iDRAC",
-	Long:  `This reboot command will reboot physical server layer of the solution using iDRAC`,
+	Short: "This reboot command will reboot physical server within solution using iDRAC",
 	Example: `
 EX1: dso server reboot -I 10.0.0.1 -U user1 -P pass1
 `,

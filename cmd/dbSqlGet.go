@@ -16,8 +16,7 @@ import (
 // reportCmd represents the report command
 var dbSqlGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "This get command will Fetch SQL Server best practice settings",
-	Long:  `This report command will pull best practice settings applicable for SQL Server`,
+	Short: "This get command will validate best practice settings at SQL Server layer",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		server, ok := os.LookupEnv("SQL_DB_HOST")

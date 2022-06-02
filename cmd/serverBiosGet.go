@@ -28,8 +28,7 @@ import (
 // serverCmd represents the server command
 var serverBiosGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "This get command will pull best practice settings for server layer of the solution",
-	Long:  `This get command will pull best practice settings for Intel based server layer of the solution`,
+	Short: "This get command will validate best practice settings for physical server BIOS",
 	Run: func(cmd *cobra.Command, args []string) {
 		idracIP, user, pass := initSrvGet(cmd, args)
 		//srvGetBios, _ := cmd.Flags().GetBool("bios")

@@ -14,7 +14,7 @@ import (
 
 var dbOrclGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "This get command will Work for fetching best practice settings from oracle database layer ",
+	Short: "This get command will validate best practice settings from oracle database layer ",
 	Run: func(cmd *cobra.Command, args []string) {
 		srv, usr, pas, svc, prt := parseDbOrclGetFlags(cmd, args)
 		outFormat, _ := cmd.Flags().GetString("out")

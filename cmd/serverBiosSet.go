@@ -26,8 +26,7 @@ import (
 // serverCmd represents the server command
 var serverBiosSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "This get command will set best practice settings for server layer of the solution",
-	Long:  `This get command will set best practice settings for Intel based server layer of the solution`,
+	Short: "This set command will apply best practice settings for physiacl server BIOS",
 	Run: func(cmd *cobra.Command, args []string) {
 		bpsFlag, _ := cmd.Flags().GetBool("bps")
 		job_id, _ := cmd.Flags().GetString("jobStatus")

@@ -11,7 +11,7 @@ import (
 // rhelCmd represents the rhel command
 var rhelCmd = &cobra.Command{
 	Use:   "rhel",
-	Short: "This rhel module will Work with RHEL (Redhat Enterprise Linux) layer of the solution",
+	Short: "This rhel sub-module under os module provides different commands to Work with RHEL operating system",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

@@ -11,7 +11,7 @@ import (
 // storageCmd represents the storage command
 var storageCmd = &cobra.Command{
 	Use:   "storage",
-	Short: "This module storage will Work with DellEMC storage layer of the solution",
+	Short: "storage module provides different sub-modules to Work with storage layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

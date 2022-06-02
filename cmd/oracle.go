@@ -11,7 +11,7 @@ import (
 // oracleCmd represents the oracle command
 var oracleCmd = &cobra.Command{
 	Use:   "oracle",
-	Short: "This sub-module oracle will Work with Oracle database layer of the solution",
+	Short: "oracle sub-module under db module will Work with Oracle database layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

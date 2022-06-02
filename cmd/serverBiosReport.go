@@ -27,8 +27,7 @@ import (
 // reportCmd represents the report command
 var serverBiosReportCmd = &cobra.Command{
 	Use:   "report",
-	Short: "This report command will pull general report for server layer of the solution",
-	Long:  `This report command will pull general report for Intel based server layer of the solution`,
+	Short: "This report command will pull report for physical server BIOS",
 	Run: func(cmd *cobra.Command, args []string) {
 		outFormat, _ := cmd.Flags().GetString("out")
 		output := ShowBios(cmd, args)

@@ -11,7 +11,7 @@ import (
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "This server module will work with physical server layer of the solution",
+	Short: "This server module provides different sub-modules to work with physical server layer of the solution",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

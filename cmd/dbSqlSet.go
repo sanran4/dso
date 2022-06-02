@@ -14,10 +14,8 @@ import (
 // reportCmd represents the report command
 var dbSqlSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "This set command will configure Dell Recomended bast practice settings to SQL Server",
-	Long:  `This set command will configure Dell Recomended bast practice settings to SQL Server`,
+	Short: "This set command will apply bast practice settings to SQL Server",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		server, ok := os.LookupEnv("SQL_DB_HOST")
 		if !ok {
 			server, _ = cmd.Flags().GetString("instance")

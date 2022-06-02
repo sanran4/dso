@@ -21,8 +21,7 @@ var mssqlConf bool = false
 
 var osRhelGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "This get command will pull best practice settings for RHEL OS",
-	Long:  `This get command will pull best practice specific settings from the RHEL operating system within your solution`,
+	Short: "This get command will validate best practice settings for RHEL operating system",
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := initOsRhelGetStep(cmd, args)
 		if err != nil {

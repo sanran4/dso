@@ -8,12 +8,9 @@ import (
 
 var infoCmd = &cobra.Command{
 	Use:   "info",
-	Short: "get help and examples of this command",
+	Short: "get help and examples for requested command",
 	Run: func(cmd *cobra.Command, args []string) {
-		//osRhelSetCmd.Help()
-		//os_rhel_set_ex()
 		fetchInfo(cmd, args)
-
 	},
 }
 

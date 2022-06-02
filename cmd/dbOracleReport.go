@@ -19,7 +19,7 @@ import (
 // dbCmd represents the db command
 var dbOrclReportCmd = &cobra.Command{
 	Use:   "report",
-	Short: "This report command will Work for reporting oracle database layer settings",
+	Short: "This report command will pull report from oracle database layer",
 	//Usage: "dso db [command]",
 	Run: func(cmd *cobra.Command, args []string) {
 		/*

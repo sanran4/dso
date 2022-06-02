@@ -20,8 +20,7 @@ import (
 
 var pstoreRptCmd = &cobra.Command{
 	Use:   "report",
-	Short: "This report command will pull general report for PowerStore storage layer of the solution",
-	Long:  `This report command will pull general report for PowerStore storage layer of the solution`,
+	Short: "This report command will pull report from PowerStore storage",
 	Run: func(cmd *cobra.Command, args []string) {
 		//ShowPstoreHostGroup(cmd, args)
 		//uri, usr, pas := createPstoreURL(cmd, args)

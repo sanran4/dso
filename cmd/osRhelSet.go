@@ -19,8 +19,7 @@ var attribute string = ""
 
 var osRhelSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "This set command with configure Dell Recomended best practice settings at RHEL operating system layer",
-	Long:  `This set command for RHEL sub-module will set Dell Recomended best practice values for SQL/Oracle solution on RHEL OS`,
+	Short: "This set command with apply best practice settings at RHEL operating system",
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := initOsRhelSetStep(cmd, args)
 		if err != nil {

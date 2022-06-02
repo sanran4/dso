@@ -16,10 +16,8 @@ import (
 // reportCmd represents the report command
 var dbSqlReportCmd = &cobra.Command{
 	Use:   "report",
-	Short: "This report command will pull report from SQL Server",
-	Long:  `This report command will pull report from SQL Server`,
+	Short: "This report command will pull report from SQL Server layer",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		server, ok := os.LookupEnv("SQL_DB_HOST")
 		if !ok {
 			server, _ = cmd.Flags().GetString("instance")

@@ -11,7 +11,7 @@ import (
 // dbCmd represents the db command
 var dbCmd = &cobra.Command{
 	Use:   "db",
-	Short: "This db module will Work with database layer of the solution",
+	Short: "db module provides different sub-modules to work with database layer of the solution",
 	//Usage: "dso db [command]",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()

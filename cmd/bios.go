@@ -4,7 +4,7 @@ import "github.com/spf13/cobra"
 
 var serverBiosCmd = &cobra.Command{
 	Use:   "bios",
-	Short: "bios sub-module will work with BIOS settings of the physical server layer within solution",
+	Short: "bios sub-module under server module provides commands to work with BIOS settings of the physical server",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

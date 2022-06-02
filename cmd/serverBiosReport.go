@@ -25,7 +25,7 @@ import (
 )
 
 // reportCmd represents the report command
-var serverReportCmd = &cobra.Command{
+var serverBiosReportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "This report command will pull general report for server layer of the solution",
 	Long:  `This report command will pull general report for Intel based server layer of the solution`,
@@ -48,14 +48,14 @@ var serverReportCmd = &cobra.Command{
 }
 
 func init() {
-	serverCmd.AddCommand(serverReportCmd)
+	serverBiosCmd.AddCommand(serverBiosReportCmd)
 
 	// Flags
 	// Format: biosCmd.PersistentFlags().StringP(name string, shorthand string, value string, usage string)
-	serverReportCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
-	serverReportCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
-	serverReportCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
-	serverReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
+	serverBiosReportCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
+	serverBiosReportCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
+	serverBiosReportCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
+	serverBiosReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required

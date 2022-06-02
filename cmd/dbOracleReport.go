@@ -17,7 +17,7 @@ import (
 )
 
 // dbCmd represents the db command
-var dbOrclRptCmd = &cobra.Command{
+var dbOrclReportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "This report command will Work for reporting oracle database layer settings",
 	//Usage: "dso db [command]",
@@ -126,18 +126,18 @@ var dbOrclRptCmd = &cobra.Command{
 }
 
 func init() {
-	oracleCmd.AddCommand(dbOrclRptCmd)
+	oracleCmd.AddCommand(dbOrclReportCmd)
 
-	dbOrclRptCmd.Flags().StringP("user", "U", "", "Username to connect to oracle instance")
-	dbOrclRptCmd.Flags().StringP("pass", "P", "", "Password to connect to oracle instance")
-	dbOrclRptCmd.Flags().StringP("instance", "I", "", "oracle db server name/IP address")
-	dbOrclRptCmd.Flags().Int("port", 1521, "oracle db port")
-	dbOrclRptCmd.Flags().String("svc", "", "oracle service name")
-	dbOrclRptCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
+	dbOrclReportCmd.Flags().StringP("user", "U", "", "Username to connect to oracle instance")
+	dbOrclReportCmd.Flags().StringP("pass", "P", "", "Password to connect to oracle instance")
+	dbOrclReportCmd.Flags().StringP("instance", "I", "", "oracle db server name/IP address")
+	dbOrclReportCmd.Flags().Int("port", 1521, "oracle db port")
+	dbOrclReportCmd.Flags().String("svc", "", "oracle service name")
+	dbOrclReportCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//dbOrclRptCmd.MarkFlagRequired("server")
 	//dbOrclRptCmd.MarkFlagRequired("user")
-	dbOrclRptCmd.MarkFlagRequired("svc")
+	dbOrclReportCmd.MarkFlagRequired("svc")
 }
 
 func parseDbOrclRptFlags(cmd *cobra.Command, args []string) (srv, usr, pas, svc string, prt int) {

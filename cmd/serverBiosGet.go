@@ -23,21 +23,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var srvGetBios bool = false
+//var serverBiosGetCmd bool = false
 
 // serverCmd represents the server command
-var serverGetCmd = &cobra.Command{
+var serverBiosGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "This get command will pull best practice settings for server layer of the solution",
 	Long:  `This get command will pull best practice settings for Intel based server layer of the solution`,
 	Run: func(cmd *cobra.Command, args []string) {
 		idracIP, user, pass := initSrvGet(cmd, args)
-		srvGetBios, _ = cmd.Flags().GetBool("bios")
+		//srvGetBios, _ := cmd.Flags().GetBool("bios")
 		outFormat, _ := cmd.Flags().GetString("out")
+		isSet := cmd.Flags().Lookup("jobStatus").Changed
 		job_id, _ := cmd.Flags().GetString("jobStatus")
-		var baseURL string
-		if srvGetBios {
-			baseURL = "https://" + idracIP + "/redfish/v1/Systems/System.Embedded.1/Bios"
+		//var baseURL string
+		baseURL := "https://" + idracIP + "/redfish/v1/Systems/System.Embedded.1/Bios"
+		if isSet {
+			if job_id != "" {
+				srvGetJobStatus(idracIP, user, pass, job_id)
+			} else {
+				cmd.Help()
+			}
+		} else {
 			out1 := srvGetBiosData(baseURL, user, pass)
 			if outFormat == "table" {
 				olog.Print(out1)
@@ -51,25 +58,20 @@ var serverGetCmd = &cobra.Command{
 				}
 				util.WriteCsvReport(of1, string(b1))
 			}
-		} else if job_id != "" {
-			srvGetJobStatus(idracIP, user, pass, job_id)
-		} else {
-			cmd.Help()
 		}
 	},
 }
 
 func init() {
-	serverCmd.AddCommand(serverGetCmd)
-
+	serverBiosCmd.AddCommand(serverBiosGetCmd)
 	// Flags
 	// Format: biosCmd.PersistentFlags().StringP(name string, shorthand string, value string, usage string)
-	serverGetCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
-	serverGetCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
-	serverGetCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
-	serverGetCmd.Flags().Bool("bios", false, "validate bios best practices for intel based server")
-	serverGetCmd.Flags().StringP("jobStatus", "j", "", "Check BIOS Job Status based on job_id")
-	serverGetCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
+	serverBiosGetCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
+	serverBiosGetCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
+	serverBiosGetCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
+	//serverBiosGetCmd.Flags().Bool("bios", false, "validate bios best practices for intel based server")
+	serverBiosGetCmd.Flags().StringP("jobStatus", "j", "", "Check BIOS Job Status based on job_id")
+	serverBiosGetCmd.Flags().StringP("out", "o", "table", "output format, available options (json, [table], csv)")
 
 	//birthdayCmd.PersistentFlags().StringP("alertType", "y", "", "Possible values: email, sms")
 	// Making Flags Required

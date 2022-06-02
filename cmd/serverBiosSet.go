@@ -21,85 +21,71 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var srvSetBios bool = false
-
 //var srvSetJobId string
 
 // serverCmd represents the server command
-var serverSetCmd = &cobra.Command{
+var serverBiosSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "This get command will set best practice settings for server layer of the solution",
 	Long:  `This get command will set best practice settings for Intel based server layer of the solution`,
-	Example: `
-EX1: dso server set -A "SysProfile:PerfOptimized" -I 10.0.0.1 -U user1 -P pass1
-EX2: dso server get --bios -I 10.0.0.1 --bios -U user1 -P pass1
-EX3: dso server get --bios --idracIP=10.0.0.1 --user=user1 --pass=pass1
-`,
 	Run: func(cmd *cobra.Command, args []string) {
 		bpsFlag, _ := cmd.Flags().GetBool("bps")
-		idracIP, user, pass, srvSetAttr, srvSetBios, srvJobConfig, rbtSrv := initSrvSet(cmd, args)
+		job_id, _ := cmd.Flags().GetString("jobStatus")
+		testFlag, _ := cmd.Flags().GetBool("test")
+		idracIP, user, pass, srvSetAttr, srvJobConfig, rbtSrv := initSrvSet(cmd, args)
 		fmt.Println(srvSetAttr)
 		//var job_id string
-		if srvSetBios {
-			if bpsFlag {
-				srvSetBiosData(idracIP, user, pass, "WorkloadProfile", "DbOptimizedProfile")
-				srvSetBiosData(idracIP, user, pass, "SysProfile", "PerfOptimized")
-				srvSetBiosData(idracIP, user, pass, "ProcVirtualization", "Enabled")
-				srvSetBiosData(idracIP, user, pass, "ProcX2Apic", "Enabled")
-				srvSetBiosData(idracIP, user, pass, "LogicalProc", "Enabled")
-				srvSetBiosData(idracIP, user, pass, "MemOpMode", "OptimizerMode")
-				srvSetBiosData(idracIP, user, pass, "SerialComm", "Off")
-				srvSetBiosData(idracIP, user, pass, "UsbPorts", "AllOff")
-				srvSetBiosData(idracIP, user, pass, "UsbManagedPort", "Off")
-				job_id := srvCreateBiosConfigJob(idracIP, user, pass)
-				fmt.Println(job_id)
-				time.Sleep(10 * time.Second)
-				srvRebootServer(idracIP, user, pass)
-				srvLoopJobStatus(idracIP, user, pass, job_id)
-			} else if srvSetAttr != "" {
-				attName, attValue := srvSetParseAttr(srvSetAttr)
-				srvSetBiosData(idracIP, user, pass, attName, attValue)
-				job_id := srvCreateBiosConfigJob(idracIP, user, pass)
-				fmt.Println(job_id)
-				time.Sleep(10 * time.Second)
-				srvRebootServer(idracIP, user, pass)
-				srvLoopJobStatus(idracIP, user, pass, job_id)
-			}
-		}
-		if srvJobConfig {
-			srvCreateBiosConfigJob(idracIP, user, pass)
-		}
-
-		job_id, _ := cmd.Flags().GetString("jobStatus")
-		if job_id != "" {
-			srvLoopJobStatus(idracIP, user, pass, job_id)
-		}
-		if rbtSrv {
+		if bpsFlag {
+			srvSetBiosData(idracIP, user, pass, "WorkloadProfile", "DbOptimizedProfile")
+			srvSetBiosData(idracIP, user, pass, "SysProfile", "PerfOptimized")
+			srvSetBiosData(idracIP, user, pass, "ProcVirtualization", "Enabled")
+			srvSetBiosData(idracIP, user, pass, "ProcX2Apic", "Enabled")
+			srvSetBiosData(idracIP, user, pass, "LogicalProc", "Enabled")
+			srvSetBiosData(idracIP, user, pass, "MemOpMode", "OptimizerMode")
+			srvSetBiosData(idracIP, user, pass, "SerialComm", "Off")
+			srvSetBiosData(idracIP, user, pass, "UsbPorts", "AllOff")
+			srvSetBiosData(idracIP, user, pass, "UsbManagedPort", "Off")
+			job_id := srvCreateBiosConfigJob(idracIP, user, pass)
+			fmt.Println(job_id)
+			time.Sleep(10 * time.Second)
 			srvRebootServer(idracIP, user, pass)
-		}
-		testFlag, _ := cmd.Flags().GetBool("test")
-		if testFlag {
+			srvLoopJobStatus(idracIP, user, pass, job_id)
+		} else if srvSetAttr != "" {
+			attName, attValue := srvSetParseAttr(srvSetAttr)
+			srvSetBiosData(idracIP, user, pass, attName, attValue)
+			job_id := srvCreateBiosConfigJob(idracIP, user, pass)
+			fmt.Println(job_id)
+			time.Sleep(10 * time.Second)
+			srvRebootServer(idracIP, user, pass)
+			srvLoopJobStatus(idracIP, user, pass, job_id)
+		} else if srvJobConfig {
+			srvCreateBiosConfigJob(idracIP, user, pass)
+		} else if job_id != "" {
+			srvLoopJobStatus(idracIP, user, pass, job_id)
+		} else if rbtSrv {
+			srvRebootServer(idracIP, user, pass)
+		} else if testFlag {
 			srvLoopJobStatus(idracIP, user, pass, "JID_526269044866")
 		}
 	},
 }
 
 func init() {
-	serverCmd.AddCommand(serverSetCmd)
-	serverSetCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
-	serverSetCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
-	serverSetCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
-	serverSetCmd.Flags().Bool("bios", false, "work with bios section of server iDRAC")
-	serverSetCmd.Flags().Bool("bps", false, "set all best practice on server iDRAC")
-	serverSetCmd.Flags().StringP("attr", "A", "", "Attribute/s to be set on server layer")
-	serverSetCmd.Flags().Bool("jobcfg", false, "Work with bios job cofig server iDRAC")
-	serverSetCmd.Flags().StringP("jobStatus", "j", "", "Check BIOS Job Status in loop based on job_id")
-	serverSetCmd.Flags().Bool("reboot", false, "Reboot server using iDRAC")
-	serverSetCmd.Flags().Bool("test", false, "test individual function")
+	serverBiosCmd.AddCommand(serverBiosSetCmd)
+	serverBiosSetCmd.Flags().StringP("idracIP", "I", "", "iDRAC IP of the server")
+	serverBiosSetCmd.Flags().StringP("user", "U", "", "Username for the server iDRAC")
+	serverBiosSetCmd.Flags().StringP("pass", "P", "", "Password for the server iDRAC")
+	//serverSetCmd.Flags().Bool("bios", false, "work with bios section of server iDRAC")
+	serverBiosSetCmd.Flags().Bool("bps", false, "set all best practice on server iDRAC")
+	serverBiosSetCmd.Flags().StringP("attr", "A", "", "Attribute/s to be set on server layer")
+	serverBiosSetCmd.Flags().Bool("jobcfg", false, "Work with bios job cofig server iDRAC")
+	serverBiosSetCmd.Flags().StringP("jobStatus", "j", "", "Check BIOS Job Status in loop based on job_id")
+	serverBiosSetCmd.Flags().Bool("reboot", false, "Reboot server using iDRAC")
+	serverBiosSetCmd.Flags().Bool("test", false, "test individual function")
 
 }
 
-func initSrvSet(cmd *cobra.Command, args []string) (ip, u, p, a string, b, jc, rb bool) {
+func initSrvSet(cmd *cobra.Command, args []string) (ip, u, p, a string, jc, rb bool) {
 	idracIP, ok := os.LookupEnv("SERVER_IDRAC_HOST")
 	if !ok {
 		idracIP, _ = cmd.Flags().GetString("idracIP")
@@ -118,12 +104,12 @@ func initSrvSet(cmd *cobra.Command, args []string) (ip, u, p, a string, b, jc, r
 			log.Printf("error getting password %v", err)
 		}
 	}
-	srvSetBios, _ = cmd.Flags().GetBool("bios")
+	//srvSetBios, _ = cmd.Flags().GetBool("bios")
 	srvJobConfig, _ := cmd.Flags().GetBool("jobcfg")
 	srvSetAttr, _ := cmd.Flags().GetString("attr")
 	rbtSrv, _ := cmd.Flags().GetBool("reboot")
 
-	return idracIP, user, pass, srvSetAttr, srvSetBios, srvJobConfig, rbtSrv
+	return idracIP, user, pass, srvSetAttr, srvJobConfig, rbtSrv
 }
 
 func srvSetParseAttr(str string) (attr, val string) {

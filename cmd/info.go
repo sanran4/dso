@@ -75,7 +75,7 @@ func fetchInfo(cmd *cobra.Command, args []string) {
 					}
 				}
 				if arguments[0] == "storage" {
-					if arguments[1] == "esxi" {
+					if arguments[1] == "pstore" {
 						pstoreCmd.Help()
 					} else {
 						fmt.Println("invalid argument")

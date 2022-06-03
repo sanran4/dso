@@ -25,7 +25,9 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		chkVersion, _ := cmd.Flags().GetBool("version")
 		if chkVersion {
-			fmt.Println("DSO Version v0.9.7")
+			fmt.Println("DSO Version v1.0.0")
+		} else {
+			cmd.Help()
 		}
 	},
 }

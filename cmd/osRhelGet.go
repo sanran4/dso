@@ -304,7 +304,7 @@ func getTunedAdmSettingsOrcl(client *ssh.Client) []tunedAdmSettings {
 
 func getTunedAdmSettingsSql(client *ssh.Client) []tunedAdmSettings {
 	cmd1 := `
-	sysctl -a | grep -E 'vm.swappiness|vm.dirty_background_ratio|vm.dirty_ratio|vm.dirty_expire_centisecs|vm.dirty_writeback_centisecs|vm.transparent_hugepages|vm.max_map_count|net.core.rmem_default|net.core.rmem_max|net.core.wmem_default|net.core.wmem_max|kernel.numa_balancing|kernel.sched_min_granularity_ns|kernel.sched_wakeup_granularity_ns' |awk ' {
+	sysctl -a | grep -E 'vm.swappiness|vm.dirty_background_ratio|vm.dirty_ratio|vm.dirty_expire_centisecs|vm.dirty_writeback_centisecs|vm.transparent_hugepages|vm.max_map_count|net.core.rmem_default|net.core.rmem_max|net.core.wmem_default|net.core.wmem_max|kernel.numa_balancing' |awk ' {
 		print "{\"Settings\":\"" $1 "\",\"RunningValues\":\"" $3 "\"}"
 		}'
 	`

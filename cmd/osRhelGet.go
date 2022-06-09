@@ -276,7 +276,7 @@ func getTunedAdmSettingsOrcl(client *ssh.Client) []tunedAdmSettings {
 		case "net.core.wmem_max":
 			osdata[k].OptimalValues = "1048576"
 		case "net.ipv4.ip_local_port_range":
-			osdata[k].OptimalValues = "9000 65499"
+			osdata[k].OptimalValues = "9000 65500"
 		case "vm.dirty_background_ratio":
 			osdata[k].OptimalValues = "3"
 		case "vm.dirty_expire_centisecs":
